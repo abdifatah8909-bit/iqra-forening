@@ -65,7 +65,8 @@ function tableQuery(table: SyncTable, ctx: UserContext, scope: Scope): { sql: st
       break;
     case 'user_profiles':
       from = 'users';
-      select = 'id, display_name, federation_id, created_at, updated_at, null as updated_by, deleted_at, server_seq';
+      select = `id, display_name, federation_id, created_at, updated_at, null as updated_by, deleted_at, server_seq,
+        exists (select 1 from role_assignments r where r.user_id = users.id and r.role = 'referee') as is_referee`;
       break;
     case 'players':
       if (!ctx.isFedAdmin) {

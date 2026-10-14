@@ -50,6 +50,8 @@ async function setRoles(tx: Tx, federationId: string, userId: string, roles: z.i
       [userId, r.role, r.club_id ?? null],
     );
   }
+  // Roles are part of the synced user profile (is_referee); bump its server_seq.
+  await tx.query('update users set updated_at = now() where id = $1', [userId]);
 }
 
 class BadRequest extends Error {}

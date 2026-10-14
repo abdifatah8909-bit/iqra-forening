@@ -212,7 +212,7 @@ export type MatchReport = Inferred<'match_reports'> &
   };
 export type MatchLineup = Inferred<'match_lineups'> & SyncMeta;
 export type MatchEvent = Inferred<'match_events'> & SyncMeta & { recorded_by: string | null };
-export type UserProfile = { id: string; display_name: string } & SyncMeta;
+export type UserProfile = { id: string; display_name: string; is_referee: boolean } & SyncMeta;
 
 export interface RowTypes {
   federations: Federation;
