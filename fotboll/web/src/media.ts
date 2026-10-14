@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { uuidv7 } from '@fotboll/shared';
 import { api, ApiError } from './api';
 import { db } from './db';
+import { DEMO } from './demo';
 import { save } from './mutate';
 
 const MAX_SIDE = 800;
@@ -49,6 +50,11 @@ export async function addPhoto(file: Blob, kind: 'player_photo' | 'club_logo'): 
 
 /** Upload photo bytes whose media row has already reached the server. */
 export async function uploadPendingMedia() {
+  if (DEMO) {
+    // No server: photos simply stay on this device.
+    await db.blobs.where('pending').equals(1).modify({ pending: 0 });
+    return;
+  }
   const pending = await db.blobs.where('pending').equals(1).toArray();
   for (const entry of pending) {
     const stillQueued = await db.outbox.where('row_id').equals(entry.id).count();
@@ -87,7 +93,7 @@ export function useMediaUrl(id: string | null | undefined): string | null {
   useEffect(() => {
     if (!entry) {
       setUrl(null);
-      if (id && entry === undefined && navigator.onLine && !inflight.has(id)) {
+      if (id && entry === undefined && navigator.onLine && !DEMO && !inflight.has(id)) {
         const p = fetchBlob(id).finally(() => inflight.delete(id));
         inflight.set(id, p);
       }

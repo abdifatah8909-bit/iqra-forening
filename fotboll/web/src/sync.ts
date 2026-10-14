@@ -7,6 +7,7 @@ import {
 } from '@fotboll/shared';
 import { api, ApiError } from './api';
 import { db } from './db';
+import { DEMO, demoTransport } from './demo';
 import { uploadPendingMedia } from './media';
 import { applyPatch, onLocalWrite } from './mutate';
 
@@ -192,4 +193,4 @@ export class SyncEngine {
   }
 }
 
-export const syncEngine = new SyncEngine();
+export const syncEngine = new SyncEngine(DEMO ? demoTransport : httpTransport);

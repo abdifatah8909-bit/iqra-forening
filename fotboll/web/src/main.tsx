@@ -6,7 +6,9 @@ import './styles.css';
 import { App } from './App';
 import { restoreSession } from './session';
 
-registerSW({ immediate: true });
+import { DEMO } from './demo';
+
+if (!DEMO) registerSW({ immediate: true });
 
 void restoreSession().then(() => {
   createRoot(document.getElementById('root')!).render(

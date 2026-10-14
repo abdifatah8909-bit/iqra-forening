@@ -38,11 +38,16 @@ export function useSession() {
 
 /** Restore the saved session; works without a network connection. */
 export async function restoreSession() {
-  const token = await db.getMeta<string>('token');
-  const me = await db.getMeta<Me>('me');
-  setToken(token ?? null);
   setUnauthorizedHandler(() => set({ expired: true }));
-  set({ ready: true, me: token && me ? me : null });
+  try {
+    const token = await db.getMeta<string>('token');
+    const me = await db.getMeta<Me>('me');
+    setToken(token ?? null);
+    set({ ready: true, me: token && me ? me : null });
+  } catch {
+    // Storage blocked (e.g. some private modes): show the sign-in screen.
+    set({ ready: true, me: null });
+  }
 }
 
 export async function login(email: string, password: string) {
@@ -50,17 +55,21 @@ export async function login(email: string, password: string) {
     method: 'POST',
     json: { email, password },
   });
+  await startSession(res.token, res.user);
+  return res.user;
+}
+
+export async function startSession(token: string, me: Me, opts: { keepData?: boolean } = {}) {
   const previous = await db.getMeta<Me>('me');
   // A different person on the same phone must not see the previous user's data.
-  if (previous && previous.id !== res.user.id) await wipeLocalData();
-  await db.setMeta('token', res.token);
-  await db.setMeta('me', res.user);
-  await db.setMeta('federation_id', res.user.federation_id);
-  setToken(res.token);
+  if (previous && previous.id !== me.id && !opts.keepData) await wipeLocalData();
+  await db.setMeta('token', token);
+  await db.setMeta('me', me);
+  await db.setMeta('federation_id', me.federation_id);
+  setToken(token);
   // Ask the browser not to evict our offline data under storage pressure.
-  void navigator.storage?.persist?.();
-  set({ me: res.user, expired: false });
-  return res.user;
+  navigator.storage?.persist?.().catch(() => {});
+  set({ me, expired: false });
 }
 
 export async function updateMe(patch: Partial<Pick<Me, 'locale' | 'display_name'>>) {
@@ -77,8 +86,11 @@ async function wipeLocalData() {
 }
 
 export async function logout() {
+  const token = await db.getMeta<string>('token');
   await api('/auth/logout', { method: 'POST' }).catch(() => {});
-  await wipeLocalData();
+  // Demo: keep the shared example data so the next role continues from it.
+  if (token?.startsWith('demo-')) await db.meta.bulkDelete(['token', 'me']);
+  else await wipeLocalData();
   setToken(null);
   set({ me: null, expired: false });
 }

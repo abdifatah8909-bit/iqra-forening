@@ -5,6 +5,8 @@ import { ApiError } from '../api';
 import { Field } from '../components';
 import { LANGUAGE_NAMES, setLanguage } from '../i18n';
 import { login } from '../session';
+import { DEMO, DEMO_ACCOUNTS, demoLogin } from '../demo';
+import icon from '../icon.svg';
 
 export function LoginPage({ notice, email: initialEmail = '' }: { notice?: string; email?: string }) {
   const { t, i18n } = useTranslation();
@@ -15,7 +17,7 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
 
   return (
     <div className="login">
-      <img className="logo" src="/icon.svg" alt="" />
+      <img className="logo" src={icon} alt="" />
       <h1 className="center" style={{ marginBlockEnd: 16 }}>
         {t('app.name')}
       </h1>
@@ -27,6 +29,26 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
         ))}
       </div>
       {notice && <div className="notice">{notice}</div>}
+      {DEMO ? (
+        <div className="card">
+          <h2 style={{ marginBlockStart: 0 }}>{t('demo.title')}</h2>
+          <p className="muted small">{t('demo.intro')}</p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {DEMO_ACCOUNTS.map((a) => (
+              <button key={a.key} className="block" disabled={busy} onClick={async () => {
+                setBusy(true);
+                try {
+                  await demoLogin(a.key);
+                } finally {
+                  setBusy(false);
+                }
+              }}>
+                {t('demo.login_as', { role: t(`roles.${a.role}`) })}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
       <form
         className="card"
         onSubmit={async (e) => {
@@ -54,7 +76,8 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
           {t('auth.submit')}
         </button>
       </form>
-      <p className="muted small center">{t('auth.first_login_online')}</p>
+      )}
+      <p className="muted small center">{DEMO ? t('demo.note') : t('auth.first_login_online')}</p>
     </div>
   );
 }

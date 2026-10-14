@@ -1,6 +1,14 @@
 {
-  "app": { "name": "Iqra Kubadda Cagta" },
-  "nav": { "home": "Bogga hore", "matches": "Ciyaaraha", "tables": "Horyaallada", "clubs": "Kooxaha", "more": "Wax kale" },
+  "app": {
+    "name": "Iqra Kubadda Cagta"
+  },
+  "nav": {
+    "home": "Bogga hore",
+    "matches": "Ciyaaraha",
+    "tables": "Horyaallada",
+    "clubs": "Kooxaha",
+    "more": "Wax kale"
+  },
   "common": {
     "save": "Kaydi",
     "cancel": "Jooji",
@@ -14,7 +22,8 @@
     "search": "Raadi",
     "online_only": "Waxay u baahan tahay internet",
     "saved": "Waa la kaydiyay",
-    "all": "Dhammaan"
+    "all": "Dhammaan",
+    "confirm": "Haa"
   },
   "auth": {
     "title": "Gal",
@@ -27,7 +36,11 @@
     "first_login_online": "Galitaanka koowaad wuxuu u baahan yahay internet. Kadib barnaamijku wuu shaqeeyaa internet la'aan.",
     "session_expired": "Fadhigaagii wuu dhacay. Mar kale gal si aad u sii wadato isku-xidhka."
   },
-  "roles": { "federation_admin": "Maamulaha xiriirka", "club_admin": "Maamulaha kooxda", "referee": "Garsoore" },
+  "roles": {
+    "federation_admin": "Maamulaha xiriirka",
+    "club_admin": "Maamulaha kooxda",
+    "referee": "Garsoore"
+  },
   "sync": {
     "synced": "La isku xidhay",
     "pending_one": "{{count}} sugaya",
@@ -82,7 +95,12 @@
     "unassigned": "Lama magacaabin",
     "upcoming": "Soo socda",
     "played": "La ciyaaray",
-    "status": { "scheduled": "Qorsheysan", "played": "La ciyaaray", "postponed": "Dib loo dhigay", "cancelled": "La joojiyay" },
+    "status": {
+      "scheduled": "Qorsheysan",
+      "played": "La ciyaaray",
+      "postponed": "Dib loo dhigay",
+      "cancelled": "La joojiyay"
+    },
     "report": {
       "none": "Warbixin ma jirto",
       "draft": "Qabyo",
@@ -134,7 +152,11 @@
     "new_season": "Xilli cusub",
     "name": "Magaca",
     "age_group": "Kooxda da'da",
-    "gender": { "male": "Rag", "female": "Haween", "mixed": "Isku jir" },
+    "gender": {
+      "male": "Rag",
+      "female": "Haween",
+      "mixed": "Isku jir"
+    },
     "points_win": "Dhibcaha guusha",
     "points_draw": "Dhibcaha barbardhaca",
     "add_team": "Ku dar koox",
@@ -162,7 +184,11 @@
     "gd": "+/-",
     "pts": "Dh",
     "form": "Qaabka",
-    "form_letter": { "W": "G", "D": "B", "L": "L" },
+    "form_letter": {
+      "W": "G",
+      "D": "B",
+      "L": "L"
+    },
     "counted": "Kaliya warbixinnada la gudbiyay ama la oggolaaday ayaa la xisaabiyaa."
   },
   "club": {
@@ -174,7 +200,10 @@
     "players": "Ciyaartoyda",
     "teams": "Kooxaha",
     "squad": "Xulka",
-    "status": { "active": "Firfircoon", "inactive": "Aan firfircoonayn" },
+    "status": {
+      "active": "Firfircoon",
+      "inactive": "Aan firfircoonayn"
+    },
     "add_to_squad": "Ku dar xulka",
     "not_visible": "Xogta ciyaartoyda waxaa arki kara kooxda iyo xiriirka oo kaliya."
   },
@@ -184,7 +213,10 @@
     "last_name": "Magaca dambe",
     "name_alt": "Magaca far kale",
     "birth_date": "Taariikhda dhalashada",
-    "gender": { "male": "Lab", "female": "Dhedig" },
+    "gender": {
+      "male": "Lab",
+      "female": "Dhedig"
+    },
     "license_no": "Lambarka shatiga",
     "photo": "Sawir",
     "choose_photo": "Qaad ama dooro sawir",
@@ -195,16 +227,33 @@
     "no_club": "Koox ma leh",
     "age": "{{age}} sano",
     "shirt": "Lam.",
-    "position": { "GK": "Goolhaye", "DF": "Daafac", "MF": "Khadka dhexe", "FW": "Weerar" },
-    "position_short": { "GK": "GH", "DF": "DF", "MF": "KD", "FW": "WR" },
-    "status": { "active": "Firfircoon", "inactive": "Aan firfircoonayn" },
+    "position": {
+      "GK": "Goolhaye",
+      "DF": "Daafac",
+      "MF": "Khadka dhexe",
+      "FW": "Weerar"
+    },
+    "position_short": {
+      "GK": "GH",
+      "DF": "DF",
+      "MF": "KD",
+      "FW": "WR"
+    },
+    "status": {
+      "active": "Firfircoon",
+      "inactive": "Aan firfircoonayn"
+    },
     "erase": "Tirtir xogta shakhsiga (GDPR)",
     "erase_confirm": "Ma si joogto ah u tirtiraysaa magaca, taariikhda dhalashada iyo sawirka ciyaaryahankan? Taariikhda ciyaaraha waxaa loo hayaa si qarsoodi ah.",
     "erased": "Xogta shakhsiga waa la tirtiray"
   },
   "registration": {
     "title": "Diiwaangelinta",
-    "status": { "pending": "Sugaya", "approved": "La oggolaaday", "rejected": "La diiday" },
+    "status": {
+      "pending": "Sugaya",
+      "approved": "La oggolaaday",
+      "rejected": "La diiday"
+    },
     "approve": "Oggolow",
     "reject": "Diid",
     "new": "Ka diiwaangeli xilliga",
@@ -235,5 +284,13 @@
     "storage_not_persisted": "Ku rakib barnaamijka shaashadda hore si xogta internet la'aanta loo ilaaliyo.",
     "privacy": "Asturnaanta",
     "privacy_text": "Xogta ciyaartoyda waxaa la tusaa kaliya dadka u baahan. Sawirrada ciyaartoyda ka yar 18 sano waxay u baahan yihiin oggolaanshaha waalidka. Xiriirku wuu tirtiri karaa xogta shakhsiga ee ciyaaryahanka marka la codsado."
+  },
+  "demo": {
+    "title": "Tijaabi demo-ga",
+    "intro": "Dooro door. Wax walba waxay ka shaqeeyaan browser-kaaga iyadoo la isticmaalayo xog tusaale ah, markaa waxba ma jabin kartid.",
+    "login_as": "Gal adigoo ah {{role}}",
+    "note": "Demo leh xog tusaale ah. Waxba looma diro server; isbeddelladu waxay ku jiraan browser-kan.",
+    "banner": "Demo · xogta tusaalaha waxay ku jirtaa browser-kan",
+    "no_server": "Akoonnada isticmaalayaasha waxaa lagu maamulaa server-ka, kaas oo demo-gu uusan lahayn."
   }
 }

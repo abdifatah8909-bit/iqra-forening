@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, MemoryRouter, Route, Routes } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { BottomNav } from './components';
+import { BottomNav, ConfirmHost } from './components';
+import { DEMO } from './demo';
 import { setLanguage } from './i18n';
 import { useSession } from './session';
 import { syncEngine } from './sync';
@@ -31,9 +32,12 @@ export function App() {
   if (!me) return <LoginPage />;
   if (expired) return <LoginPage notice={t('auth.session_expired')} email={me.email} />;
 
+  // The demo runs inside an embedded frame, so routing stays in memory.
+  const Router = DEMO ? MemoryRouter : BrowserRouter;
   return (
-    <BrowserRouter>
+    <Router>
       <div className="app">
+        {DEMO && <div className="demo-banner">{t('demo.banner')}</div>}
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/matches" element={<MatchesPage />} />
@@ -49,7 +53,8 @@ export function App() {
           <Route path="*" element={<HomePage />} />
         </Routes>
         <BottomNav />
+        <ConfirmHost />
       </div>
-    </BrowserRouter>
+    </Router>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { Match, MatchReport, Team } from '@fotboll/shared';
@@ -229,4 +229,57 @@ export function useToast() {
       </div>
     ) : null,
   };
+}
+
+/**
+ * In-app confirmation dialog. Used instead of window.confirm(), which some
+ * embedded web views (and installed PWAs on some platforms) suppress.
+ */
+interface PendingQuestion {
+  message: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  resolve: (ok: boolean) => void;
+}
+let question: PendingQuestion | null = null;
+const questionListeners = new Set<() => void>();
+const setQuestion = (q: PendingQuestion | null) => {
+  question = q;
+  questionListeners.forEach((fn) => fn());
+};
+
+export function ask(message: string, opts: { confirmLabel?: string; danger?: boolean } = {}): Promise<boolean> {
+  question?.resolve(false);
+  return new Promise((resolve) => setQuestion({ message, ...opts, resolve }));
+}
+
+export function ConfirmHost() {
+  const { t } = useTranslation();
+  const q = useSyncExternalStore(
+    (fn) => {
+      questionListeners.add(fn);
+      return () => questionListeners.delete(fn);
+    },
+    () => question,
+  );
+  if (!q) return null;
+  const answer = (ok: boolean) => {
+    setQuestion(null);
+    q.resolve(ok);
+  };
+  return (
+    <div className="dialog-backdrop" onClick={() => answer(false)}>
+      <div className="dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <p>{q.message}</p>
+        <div className="row" style={{ justifyContent: 'flex-end' }}>
+          <button className="secondary" onClick={() => answer(false)}>
+            {t('common.cancel')}
+          </button>
+          <button className={q.danger ? 'danger' : ''} onClick={() => answer(true)} autoFocus>
+            {q.confirmLabel ?? t('common.confirm')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

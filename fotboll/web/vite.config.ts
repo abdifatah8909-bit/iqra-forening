@@ -2,7 +2,19 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // The demo build is packed into a single HTML file (scripts/inline-demo.mjs).
+  ...(mode === 'demo'
+    ? {
+        base: './',
+        build: {
+          outDir: 'dist-demo',
+          assetsInlineLimit: 100_000,
+          cssCodeSplit: false,
+          rollupOptions: { output: { inlineDynamicImports: true } },
+        },
+      }
+    : {}),
   plugins: [
     react(),
     VitePWA({
@@ -32,4 +44,4 @@ export default defineConfig({
   server: {
     proxy: { '/api': 'http://localhost:3000' },
   },
-});
+}));

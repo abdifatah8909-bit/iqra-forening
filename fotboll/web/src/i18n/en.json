@@ -1,6 +1,14 @@
 {
-  "app": { "name": "Iqra Football" },
-  "nav": { "home": "Home", "matches": "Matches", "tables": "Leagues", "clubs": "Clubs", "more": "More" },
+  "app": {
+    "name": "Iqra Football"
+  },
+  "nav": {
+    "home": "Home",
+    "matches": "Matches",
+    "tables": "Leagues",
+    "clubs": "Clubs",
+    "more": "More"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -14,7 +22,8 @@
     "search": "Search",
     "online_only": "Needs an internet connection",
     "saved": "Saved",
-    "all": "All"
+    "all": "All",
+    "confirm": "OK"
   },
   "auth": {
     "title": "Sign in",
@@ -27,7 +36,11 @@
     "first_login_online": "The first sign-in needs an internet connection. After that the app works offline.",
     "session_expired": "Your session has expired. Sign in again to keep syncing."
   },
-  "roles": { "federation_admin": "Federation admin", "club_admin": "Club admin", "referee": "Referee" },
+  "roles": {
+    "federation_admin": "Federation admin",
+    "club_admin": "Club admin",
+    "referee": "Referee"
+  },
   "sync": {
     "synced": "Synced",
     "pending_one": "{{count}} waiting",
@@ -82,7 +95,12 @@
     "unassigned": "Not assigned",
     "upcoming": "Upcoming",
     "played": "Played",
-    "status": { "scheduled": "Scheduled", "played": "Played", "postponed": "Postponed", "cancelled": "Cancelled" },
+    "status": {
+      "scheduled": "Scheduled",
+      "played": "Played",
+      "postponed": "Postponed",
+      "cancelled": "Cancelled"
+    },
     "report": {
       "none": "No report",
       "draft": "Draft",
@@ -134,7 +152,11 @@
     "new_season": "New season",
     "name": "Name",
     "age_group": "Age group",
-    "gender": { "male": "Men", "female": "Women", "mixed": "Mixed" },
+    "gender": {
+      "male": "Men",
+      "female": "Women",
+      "mixed": "Mixed"
+    },
     "points_win": "Points for a win",
     "points_draw": "Points for a draw",
     "add_team": "Add team",
@@ -162,7 +184,11 @@
     "gd": "+/-",
     "pts": "Pts",
     "form": "Form",
-    "form_letter": { "W": "W", "D": "D", "L": "L" },
+    "form_letter": {
+      "W": "W",
+      "D": "D",
+      "L": "L"
+    },
     "counted": "Only submitted and approved reports count."
   },
   "club": {
@@ -174,7 +200,10 @@
     "players": "Players",
     "teams": "Teams",
     "squad": "Squad",
-    "status": { "active": "Active", "inactive": "Inactive" },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
     "add_to_squad": "Add to squad",
     "not_visible": "Player details are only shown to the club and the federation."
   },
@@ -184,7 +213,10 @@
     "last_name": "Last name",
     "name_alt": "Name in another script",
     "birth_date": "Date of birth",
-    "gender": { "male": "Male", "female": "Female" },
+    "gender": {
+      "male": "Male",
+      "female": "Female"
+    },
     "license_no": "Licence number",
     "photo": "Photo",
     "choose_photo": "Take or choose photo",
@@ -195,16 +227,33 @@
     "no_club": "No club",
     "age": "{{age}} years",
     "shirt": "No.",
-    "position": { "GK": "Goalkeeper", "DF": "Defender", "MF": "Midfielder", "FW": "Forward" },
-    "position_short": { "GK": "GK", "DF": "DF", "MF": "MF", "FW": "FW" },
-    "status": { "active": "Active", "inactive": "Inactive" },
+    "position": {
+      "GK": "Goalkeeper",
+      "DF": "Defender",
+      "MF": "Midfielder",
+      "FW": "Forward"
+    },
+    "position_short": {
+      "GK": "GK",
+      "DF": "DF",
+      "MF": "MF",
+      "FW": "FW"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
     "erase": "Erase personal data (GDPR)",
     "erase_confirm": "Permanently erase this player's name, date of birth and photo? Match history is kept anonymously.",
     "erased": "Personal data erased"
   },
   "registration": {
     "title": "Registrations",
-    "status": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected" },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
     "approve": "Approve",
     "reject": "Reject",
     "new": "Register for season",
@@ -235,5 +284,13 @@
     "storage_not_persisted": "Install the app on your home screen so offline data is kept safely.",
     "privacy": "Privacy",
     "privacy_text": "Player data is only shown to people who need it. Photos of players under 18 require guardian consent. The federation can erase a player's personal data on request."
+  },
+  "demo": {
+    "title": "Try the demo",
+    "intro": "Choose a role. Everything runs in your browser with example data, so you can't break anything.",
+    "login_as": "Sign in as {{role}}",
+    "note": "Demo with example data. Nothing is sent to a server; changes stay in this browser.",
+    "banner": "Demo · example data stays in this browser",
+    "no_server": "User accounts are managed on the server, which the demo doesn't have."
   }
 }

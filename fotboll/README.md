@@ -49,6 +49,14 @@ Demokonton (lösenord `fotboll123`):
 | domare@example.org | Domare | arabiska |
 | domare2@example.org | Domare | engelska |
 
+### Demo utan server
+
+`npm run demo-snapshot -w server` (efter `npm run seed`) och sedan `npm run build:demo -w web` ger
+`web/dist-demo/iqra-fotboll-demo.html`. Det är en fristående fil där hela appen körs i webbläsaren
+med demodata. Man väljer roll i stället för att logga in, och alla roller delar samma data, så att
+man kan skicka in en rapport som domare och godkänna den som förbundsadmin. Serverns regler och
+filtrering per roll körs inte i demon, men gränssnittets egna behörighetsregler gäller.
+
 ### Produktion
 
 ```bash

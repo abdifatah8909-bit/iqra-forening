@@ -9,6 +9,7 @@ import { db } from '../db';
 import { playerName, useLookups, useOnline } from '../hooks';
 import { LANGUAGE_NAMES } from '../i18n';
 import { save } from '../mutate';
+import { DEMO } from '../demo';
 
 interface AdminUser {
   id: string;
@@ -125,9 +126,16 @@ function Users() {
       .catch((e) => setError(e instanceof ApiError ? e.code : 'unknown'));
   }, []);
   useEffect(() => {
-    if (online) load();
+    if (online && !DEMO) load();
   }, [online, load]);
 
+  if (DEMO)
+    return (
+      <>
+        <h2>{t('admin.users')}</h2>
+        <p className="notice">{t('demo.no_server')}</p>
+      </>
+    );
   return (
     <>
       <h2>{t('admin.users')}</h2>

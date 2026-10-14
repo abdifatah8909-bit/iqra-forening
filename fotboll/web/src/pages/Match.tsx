@@ -14,7 +14,7 @@ import {
   type Player,
   type Team,
 } from '@fotboll/shared';
-import { Empty, Field, ReportChip, Tabs, TopBar, useToast } from '../components';
+import { ask, Empty, Field, ReportChip, Tabs, TopBar, useToast } from '../components';
 import { db } from '../db';
 import { can, isReportLocked, playerName, useCompetitionName, useLookups, useMe } from '../hooks';
 import { formatDateTime } from '../i18n';
@@ -154,7 +154,7 @@ function Timeline({ events, match, editable }: { events: MatchEvent[]; match: Ma
             </div>
           </span>
           {editable && (
-            <button className="icon-btn" aria-label={t('common.delete')} onClick={() => confirm(t('common.confirm_delete')) && remove('match_events', e.id)}>
+            <button className="icon-btn" aria-label={t('common.delete')} onClick={async () => (await ask(t('common.confirm_delete'), { confirmLabel: t('common.delete'), danger: true })) && remove('match_events', e.id)}>
               ✕
             </button>
           )}
@@ -386,8 +386,8 @@ function ReportActions({ match, report, score }: { match: Match; report?: MatchR
       <div className="row">
         {isReferee && !locked && (
           <button
-            onClick={() =>
-              confirm(t('match.submit_confirm', { score: `${score.home}–${score.away}` })) &&
+            onClick={async () =>
+              (await ask(t('match.submit_confirm', { score: `\u2066${score.home}–${score.away}\u2069` }), { confirmLabel: t('match.submit_report') })) &&
               saveReport({ status: 'submitted', home_score: score.home, away_score: score.away, ...(notes !== null ? { notes: notes || null } : {}) })
             }
           >

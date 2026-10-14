@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { LOCALES } from '@fotboll/shared';
-import { TopBar } from '../components';
+import { ask, TopBar } from '../components';
 import { db } from '../db';
 import { useMe, useSyncState } from '../hooks';
 import { formatDateTime, LANGUAGE_NAMES, setLanguage } from '../i18n';
@@ -109,8 +109,8 @@ export function MorePage() {
           </div>
           <button
             className="danger"
-            onClick={() => {
-              if (sync.pending && !confirm(t('auth.logout_pending', { count: sync.pending }))) return;
+            onClick={async () => {
+              if (sync.pending && !(await ask(t('auth.logout_pending', { count: sync.pending }), { confirmLabel: t('auth.logout'), danger: true }))) return;
               void logout();
             }}
           >

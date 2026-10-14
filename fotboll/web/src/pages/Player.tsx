@@ -4,12 +4,13 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { ageOn, isMinor, type Player } from '@fotboll/shared';
 import { api, ApiError } from '../api';
-import { Avatar, Empty, Field, PhotoPicker, TopBar, useToast } from '../components';
+import { ask, Avatar, Empty, Field, PhotoPicker, TopBar, useToast } from '../components';
 import { db } from '../db';
 import { can, playerName, useCurrentSeason, useLookups, useMe, useOnline } from '../hooks';
 import { formatDateTime } from '../i18n';
 import { save } from '../mutate';
 import { isFedAdmin } from '../session';
+import { DEMO } from '../demo';
 
 export function PlayerPage() {
   const { id } = useParams() as { id: string };
@@ -115,10 +116,10 @@ function PlayerView({ player, onEdit }: { player: Player; onEdit?: () => void })
             <h2>{t('settings.privacy')}</h2>
             <button
               className="danger block"
-              disabled={!online}
+              disabled={!online || DEMO}
               title={online ? undefined : t('common.online_only')}
               onClick={async () => {
-                if (!confirm(t('player.erase_confirm'))) return;
+                if (!(await ask(t('player.erase_confirm'), { confirmLabel: t('player.erase'), danger: true }))) return;
                 try {
                   await api(`/admin/players/${player.id}/erase`, { method: 'POST' });
                   await db.data('players').delete(player.id);

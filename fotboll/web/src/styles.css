@@ -173,3 +173,8 @@ table.standings { border-collapse: collapse; inline-size: 100%; font-size: 0.9re
   .bottomnav { inset-inline: 50%; transform: translateX(-50%); inline-size: 520px; border-inline: 1px solid var(--line); border-radius: 16px 16px 0 0; }
   [dir='rtl'] .bottomnav { transform: translateX(50%); }
 }
+
+.dialog-backdrop { position: fixed; inset: 0; z-index: 30; background: rgba(10, 20, 15, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dialog { background: var(--card); border-radius: var(--radius); padding: 18px; inline-size: 100%; max-inline-size: 420px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+.dialog p { margin-block-end: 16px; line-height: 1.45; }
+.demo-banner { background: var(--warn-bg); color: #5b4300; font-size: 0.8rem; text-align: center; padding: 6px 16px; }
