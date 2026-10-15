@@ -1,10 +1,13 @@
+import i18n from './i18n';
 import {
+  LOCALES,
   LOCKED_REPORT_STATUSES,
   scoreFromEvents,
   type MutationResult,
   type PublicData,
   type PullResponse,
   type ReportStatus,
+  type Locale,
   type Role,
 } from '@fotboll/shared';
 import { db } from './db';
@@ -40,7 +43,9 @@ async function loadSnapshot() {
 /** All roles share one local copy, so switching role keeps what was done in another. */
 export async function demoLogin(key: DemoKey) {
   const s = await loadSnapshot();
-  await startSession(`demo-${key}`, s.accounts[key], { keepData: true });
+  // Roles have different saved languages; in the demo the one on screen applies to all of them.
+  const locale = (LOCALES as readonly string[]).includes(i18n.language) ? (i18n.language as Locale) : s.accounts[key].locale;
+  await startSession(`demo-${key}`, { ...s.accounts[key], locale }, { keepData: true });
 }
 
 const WEEK = 7 * 86400000;

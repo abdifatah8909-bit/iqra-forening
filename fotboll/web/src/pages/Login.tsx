@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LOCALES } from '@fotboll/shared';
 import { api, ApiError } from '../api';
 import { Field } from '../components';
-import { LANGUAGE_NAMES, setLanguage } from '../i18n';
+import { chooseLanguage, LANGUAGE_NAMES } from '../i18n';
 import { login } from '../session';
 import { DEMO, DEMO_ACCOUNTS, demoLogin } from '../demo';
 import icon from '../icon.svg';
@@ -25,7 +25,7 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
       </h1>
       <div className="lang-switch">
         {LOCALES.map((l) => (
-          <button key={l} className={i18n.language === l ? 'small' : 'secondary small'} onClick={() => setLanguage(l)}>
+          <button key={l} className={i18n.language === l ? 'small' : 'secondary small'} onClick={() => chooseLanguage(l)}>
             {LANGUAGE_NAMES[l]}
           </button>
         ))}

@@ -5,7 +5,7 @@ import { computeStandings, LOCALES, type PublicData } from '@fotboll/shared';
 import { api, ApiError } from '../api';
 import { Empty, StandingsTable, Tabs } from '../components';
 import { DEMO, demoPublicData } from '../demo';
-import { formatDateTime, LANGUAGE_NAMES, setLanguage } from '../i18n';
+import { chooseLanguage, formatDateTime, LANGUAGE_NAMES } from '../i18n';
 import icon from '../icon.svg';
 
 /**
@@ -129,7 +129,7 @@ function PublicHeader({ title }: { title: string }) {
       <select
         aria-label={t('settings.language')}
         value={i18n.language}
-        onChange={(e) => setLanguage(e.target.value as (typeof LOCALES)[number])}
+        onChange={(e) => chooseLanguage(e.target.value as (typeof LOCALES)[number])}
         className="public-lang"
       >
         {LOCALES.map((l) => (

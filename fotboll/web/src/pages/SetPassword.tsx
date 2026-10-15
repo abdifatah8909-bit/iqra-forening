@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { Locale } from '@fotboll/shared';
+import { LOCALES, type Locale } from '@fotboll/shared';
 import { api, ApiError } from '../api';
 import { Field } from '../components';
-import { setLanguage } from '../i18n';
+import { chooseLanguage, chosenLanguage, LANGUAGE_NAMES, setLanguage } from '../i18n';
 import { setPasswordWithLink } from '../session';
 import icon from '../icon.svg';
 
@@ -18,7 +18,7 @@ interface LinkInfo {
 /** Landing page for invitation and password-reset links: choose a password, then straight into the app. */
 export function SetPasswordPage() {
   const { token } = useParams() as { token: string };
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [info, setInfo] = useState<LinkInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,8 @@ export function SetPasswordPage() {
     api<LinkInfo>(`/auth/token/${encodeURIComponent(token)}`)
       .then((i) => {
         setInfo(i);
-        setLanguage(i.locale);
+        // The admin's choice for the account, unless the person picked a language on this device.
+        if (!chosenLanguage()) setLanguage(i.locale);
       })
       .catch((err) => setError(err instanceof ApiError ? err.code : 'unknown'));
   }, [token]);
@@ -43,6 +44,13 @@ export function SetPasswordPage() {
       <h1 className="center" style={{ marginBlockEnd: 16 }}>
         {t('app.name')}
       </h1>
+      <div className="lang-switch">
+        {LOCALES.map((l) => (
+          <button key={l} className={i18n.language === l ? 'small' : 'secondary small'} onClick={() => chooseLanguage(l)}>
+            {LANGUAGE_NAMES[l]}
+          </button>
+        ))}
+      </div>
       {!info && !error && <p className="center muted">…</p>}
       {error && (
         <div className="card">

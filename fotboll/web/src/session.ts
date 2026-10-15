@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { Locale, Role } from '@fotboll/shared';
 import { api, setToken, setUnauthorizedHandler } from './api';
 import { db } from './db';
+import { chosenLanguage } from './i18n';
 
 export interface Me {
   id: string;
@@ -70,6 +71,10 @@ export async function setPasswordWithLink(linkToken: string, password: string) {
 }
 
 export async function startSession(token: string, me: Me, opts: { keepData?: boolean } = {}) {
+  // A language picked before signing in replaces the one saved on the account.
+  const picked = chosenLanguage({ consume: true });
+  const changeLocale = picked !== null && picked !== me.locale;
+  if (changeLocale) me = { ...me, locale: picked };
   const previous = await db.getMeta<Me>('me');
   // A different person on the same phone must not see the previous user's data.
   if (previous && previous.id !== me.id && !opts.keepData) await wipeLocalData();
@@ -77,6 +82,7 @@ export async function startSession(token: string, me: Me, opts: { keepData?: boo
   await db.setMeta('me', me);
   await db.setMeta('federation_id', me.federation_id);
   setToken(token);
+  if (changeLocale && !token.startsWith('demo-')) api('/me', { method: 'PATCH', json: { locale: me.locale } }).catch(() => {});
   // Ask the browser not to evict our offline data under storage pressure.
   navigator.storage?.persist?.().catch(() => {});
   set({ me, expired: false });
