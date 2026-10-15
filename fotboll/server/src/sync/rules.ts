@@ -1,8 +1,12 @@
 import {
+  initialTransferStatus,
   isMinor,
   LOCKED_REPORT_STATUSES,
+  OPEN_TRANSFER_STATUSES,
   scoreFromEvents,
+  transferActions,
   type ReportStatus,
+  type TransferStatus,
   type WritableTable,
 } from '@fotboll/shared';
 import type { UserContext } from '../auth.js';
@@ -60,6 +64,7 @@ export const INSERT_DEFAULTS: Partial<Record<WritableTable, Row>> = {
   match_lineups: { is_starter: true, is_captain: false, is_goalkeeper: false, shirt_number: null },
   match_events: { player_id: null, related_player_id: null, added_time: null },
   suspensions: { competition_id: null, matches: null, ends_on: null, reason: null },
+  transfers: { status: 'pending_club', note: null, response_note: null },
 };
 
 /**
@@ -84,6 +89,7 @@ export const REFERENCES: Partial<Record<WritableTable, Record<string, string>>> 
   match_lineups: { match_id: 'matches', team_id: 'teams', player_id: 'players' },
   match_events: { match_id: 'matches', team_id: 'teams', player_id: 'players', related_player_id: 'players' },
   suspensions: { player_id: 'players', competition_id: 'competitions' },
+  transfers: { player_id: 'players', to_club_id: 'clubs' },
 };
 
 const FORBIDDEN = 'forbidden';
@@ -238,6 +244,77 @@ export const RULES: Record<WritableTable, TableRules> = {
         if (await playerBanForMatch(tx, after.player_id, after.match_id)) return 'player_suspended';
       }
       return null;
+    },
+  },
+
+  transfers: {
+    async check({ tx, ctx, op, before, after }) {
+      if (op === 'delete') return ctx.isFedAdmin ? null : FORBIDDEN;
+      if (op === 'insert') {
+        // The receiving club applies (or the federation on its behalf).
+        if (!ctx.isFedAdmin && !ctx.clubIds.includes(after.to_club_id)) return FORBIDDEN;
+        const player = await one(tx, 'select club_id from players where id = $1', [after.player_id]);
+        return player!.club_id === after.to_club_id ? 'already_in_club' : null;
+      }
+      if (after.player_id !== before!.player_id || after.to_club_id !== before!.to_club_id) return FORBIDDEN;
+      const from = before!.status as TransferStatus;
+      if (!OPEN_TRANSFER_STATUSES.includes(from)) return 'transfer_decided';
+      const involved =
+        ctx.isFedAdmin || ctx.clubIds.includes(before!.to_club_id) || ctx.clubIds.includes(before!.from_club_id);
+      if (!involved) return FORBIDDEN;
+      if (after.status === from) return null; // notes only
+      // Each step belongs to one party; the federation can only approve after the release.
+      const state = { status: from, from_club_id: before!.from_club_id, to_club_id: before!.to_club_id };
+      if (!transferActions(state, ctx).includes(after.status)) return FORBIDDEN;
+      if (after.status === 'pending_federation' || after.status === 'approved') {
+        // The player has moved some other way since the request: it no longer applies.
+        const player = await one(tx, 'select club_id from players where id = $1', [after.player_id]);
+        if ((player!.club_id ?? null) !== before!.from_club_id) return 'transfer_outdated';
+      }
+      return null;
+    },
+    async serverFields({ tx, ctx, op, before, after }) {
+      const now = new Date().toISOString();
+      if (op === 'insert') {
+        const player = await one(tx, 'select club_id from players where id = $1', [after.player_id]);
+        const fromClub = player!.club_id ?? null;
+        return { from_club_id: fromClub, status: initialTransferStatus(fromClub), requested_by: ctx.userId };
+      }
+      if (after.status === before?.status) return {};
+      if (after.status === 'pending_federation') return { released_by: ctx.userId, released_at: now };
+      if (after.status === 'approved' || after.status === 'rejected') return { decided_by: ctx.userId, decided_at: now };
+      return {};
+    },
+    async afterWrite({ tx, ctx, op, before, after }) {
+      if (op === 'delete' || after.status !== 'approved' || before?.status === 'approved') return;
+      // The player moves: new club, out of the old club's squads, registered for the season.
+      await tx.query('update players set club_id = $1, updated_by = $3 where id = $2', [
+        after.to_club_id,
+        after.player_id,
+        ctx.userId,
+      ]);
+      await tx.query(
+        `update squad_members set deleted_at = now(), updated_by = $3
+         where player_id = $1 and deleted_at is null
+           and team_id in (select id from teams where club_id is distinct from $2)`,
+        [after.player_id, after.to_club_id, ctx.userId],
+      );
+      const season = await one(
+        tx,
+        `select id from seasons where federation_id = $1 and deleted_at is null
+         order by (current_date between starts_on and ends_on) desc, starts_on desc limit 1`,
+        [ctx.federationId],
+      );
+      if (season) {
+        await tx.query(
+          `insert into registrations (id, federation_id, player_id, club_id, season_id, status, note,
+                                      decided_by, decided_at, updated_by)
+           select gen_random_uuid(), $1, $2, $3, $4, 'approved', 'transfer', $5, now(), $5
+           where not exists (select 1 from registrations where player_id = $2 and club_id = $3
+                             and season_id = $4 and status = 'approved' and deleted_at is null)`,
+          [ctx.federationId, after.player_id, after.to_club_id, season.id, ctx.userId],
+        );
+      }
     },
   },
 

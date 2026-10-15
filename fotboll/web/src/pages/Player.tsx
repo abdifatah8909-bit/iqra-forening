@@ -22,6 +22,7 @@ import { formatDate, formatDateTime } from '../i18n';
 import { remove, save } from '../mutate';
 import { isFedAdmin } from '../session';
 import { DEMO } from '../demo';
+import { TransferCard } from './Transfers';
 
 export function PlayerPage() {
   const { id } = useParams() as { id: string };
@@ -121,6 +122,8 @@ function PlayerView({ player, onEdit }: { player: Player; onEdit?: () => void })
             </div>
           ))}
         </div>
+
+        <PlayerTransfers playerId={player.id} />
 
         <Discipline player={player} />
 
@@ -472,5 +475,24 @@ function SuspensionForm({ player, onDone }: { player: Player; onDone: () => void
         </button>
       </div>
     </form>
+  );
+}
+
+function PlayerTransfers({ playerId }: { playerId: string }) {
+  const { t } = useTranslation();
+  const transfers = useLiveQuery(
+    async () =>
+      (await db.data('transfers').where('player_id').equals(playerId).toArray()).sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    [playerId],
+    [],
+  );
+  if (!transfers.length) return null;
+  return (
+    <>
+      <h2>{t('transfer.title')}</h2>
+      {transfers.map((x) => (
+        <TransferCard key={x.id} transfer={x} compact />
+      ))}
+    </>
   );
 }

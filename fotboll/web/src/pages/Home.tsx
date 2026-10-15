@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { transferAwaits } from '@fotboll/shared';
 import { Empty, MatchCard, TopBar } from '../components';
 import { db } from '../db';
-import { isReportLocked, useLookups, useMe } from '../hooks';
+import { isReportLocked, transferActor, useLookups, useMe } from '../hooks';
 import { adminClubIds, hasRole, isFedAdmin } from '../session';
 
 export function HomePage() {
@@ -32,6 +33,7 @@ export function HomePage() {
       recent: matches.filter((m) => reports.get(m.id) && isReportLocked(reports.get(m.id))).reverse().slice(0, 5),
       toApprove: fedAdmin ? matches.filter((m) => reports.get(m.id)?.status === 'submitted') : [],
       pendingRegs: await db.data('registrations').where('status').equals('pending').count(),
+      transfersToHandle: (await db.data('transfers').toArray()).filter((x) => transferAwaits(x, transferActor(me))).length,
     };
   }, [me.id, fedAdmin, clubIds.join()]);
 
@@ -60,6 +62,15 @@ export function HomePage() {
                 <span aria-hidden>›</span>
               </Link>
             ))}
+          </div>
+        )}
+
+        {data.transfersToHandle > 0 && (
+          <div className="list">
+            <Link to="/transfers">
+              <span className="grow">{t('transfer.to_handle')}</span>
+              <span className="chip warn">{data.transfersToHandle}</span>
+            </Link>
           </div>
         )}
 

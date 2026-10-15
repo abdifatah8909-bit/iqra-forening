@@ -7,7 +7,7 @@ import { ask, TopBar } from '../components';
 import { db } from '../db';
 import { useMe, useSyncState } from '../hooks';
 import { formatDateTime, LANGUAGE_NAMES, setLanguage } from '../i18n';
-import { isFedAdmin, logout, updateMe } from '../session';
+import { adminClubIds, isFedAdmin, logout, updateMe } from '../session';
 import { syncEngine } from '../sync';
 
 export function MorePage() {
@@ -24,10 +24,16 @@ export function MorePage() {
     <>
       <TopBar title={t('nav.more')} />
       <main>
-        {isFedAdmin(me) && (
+        {(isFedAdmin(me) || adminClubIds(me).length > 0) && (
           <div className="list">
-            <Link to="/admin">
-              <span className="grow">{t('admin.title')}</span>
+            {isFedAdmin(me) && (
+              <Link to="/admin">
+                <span className="grow">{t('admin.title')}</span>
+                <span aria-hidden>›</span>
+              </Link>
+            )}
+            <Link to="/transfers">
+              <span className="grow">{t('transfer.title')}</span>
               <span aria-hidden>›</span>
             </Link>
           </div>

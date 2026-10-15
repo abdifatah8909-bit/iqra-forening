@@ -103,7 +103,7 @@ async function wipeLocalData() {
 
 export async function logout() {
   const token = await db.getMeta<string>('token');
-  await api('/auth/logout', { method: 'POST' }).catch(() => {});
+  if (!token?.startsWith('demo-')) await api('/auth/logout', { method: 'POST' }).catch(() => {});
   // Demo: keep the shared example data so the next role continues from it.
   if (token?.startsWith('demo-')) await db.meta.bulkDelete(['token', 'me']);
   else await wipeLocalData();

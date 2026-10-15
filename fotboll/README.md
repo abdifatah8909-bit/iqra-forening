@@ -18,6 +18,7 @@ En mobil-först PWA som fungerar **offline**, på somaliska, engelska och arabis
 - Spelschema med round-robin-generator
 - Matchrapport med trupper, mål, kort och byten
 - Serietabeller som räknas fram på enheten
+- Övergångar mellan klubbar: den nya klubben ansöker, den nuvarande klubben släpper spelaren och förbundet godkänner
 - Avstängningar: röda kort, två gula i samma match och ackumulerade gula kort ger automatiska avstängningar. Förbundet kan också besluta om egna avstängningar.
 - Inbjudningar och nytt lösenord via engångslänkar, som skickas med e-post eller delas via WhatsApp eller SMS
 - En publik sida med spelschema, resultat, tabeller och klubbar, som vem som helst kan se utan att logga in
@@ -113,6 +114,7 @@ Testerna täcker:
 - **Inbjudningar och lösenord:** engångslänkar, utgångstid, att bara den senaste länken gäller, och att svaret på "glömt lösenord" inte avslöjar om adressen finns.
 - **Avstängningar:** röda kort, andra gula, ackumulerade gula kort, inställda och uppskjutna matcher, manuella avstängningar, och att servern stoppar avstängda spelare i laguppställningen.
 - **Publik sida:** bara inskickade resultat och inga personuppgifter.
+- **Övergångar:** att stegen sker i rätt ordning och av rätt part, att spelaren flyttas vid godkännande, och vem som ser spelaren under tiden.
 - **Synkprotokollet:** inkrementell pull, sidindelning (2 500 rader), idempotens, fältvis sammanslagning med konfliktlogg och gravstenar.
 - **Behörigheter:** klubbadmin och domare, referenser mellan förbund, samtycke för foto av minderåriga.
 - **Domarflödet:** trupp, händelser, inskickad rapport, lås och återöppning.
@@ -125,7 +127,6 @@ Testerna täcker:
 
 - **Översättningar:** De somaliska och arabiska texterna är maskinnära utkast och bör granskas av modersmålstalare.
 - **Bakgrundssynk på iOS:** Fungerar inte. Synken körs när appen är öppen eller öppnas igen.
-- **Övergångar mellan klubbar:** Sköts av förbundsadmin. Det finns inget ansökningsflöde för klubbar ännu.
 - **Inloggning med telefonnummer:** Konton kräver en e-postadress. Inbjudningslänken kan dock skickas via WhatsApp eller SMS.
 - **Avstängningar över säsonger:** En avstängning som inte hunnit avtjänas när säsongen tar slut följer inte med till nästa säsong. Förbundet får lägga in en manuell avstängning.
 - **Överklaganden:** Det går inte att ta bort en automatisk avstängning. Förbundsadmin kan ändå sätta in spelaren i laguppställningen.

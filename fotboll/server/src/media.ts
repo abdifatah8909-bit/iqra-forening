@@ -28,7 +28,9 @@ async function canView(db: Db, ctx: UserContext, media: { id: string; kind: stri
        p.club_id = any($3) or p.id in (
          select sm.player_id from squad_members sm
          join matches m on sm.team_id in (m.home_team_id, m.away_team_id)
-         where m.referee_user_id = $4 and m.deleted_at is null and sm.deleted_at is null))`,
+         where m.referee_user_id = $4 and m.deleted_at is null and sm.deleted_at is null) or p.id in (
+         select player_id from transfers where to_club_id = any($3)
+           and status in ('pending_club', 'pending_federation') and deleted_at is null))`,
     [media.id, ctx.federationId, ctx.clubIds, ctx.userId],
   );
   return (res.rowCount ?? 0) > 0;

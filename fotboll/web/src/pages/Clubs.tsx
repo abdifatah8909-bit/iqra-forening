@@ -151,6 +151,15 @@ export function ClubPage() {
           </div>
         )}
 
+        {editable && (
+          <div className="list">
+            <Link to={`/transfers?club=${club.id}`}>
+              <span className="grow">{t('transfer.title')}</span>
+              <span aria-hidden>›</span>
+            </Link>
+          </div>
+        )}
+
         <h2>{t('club.teams')}</h2>
         <div className="list">
           {teams.length === 0 && <Empty />}

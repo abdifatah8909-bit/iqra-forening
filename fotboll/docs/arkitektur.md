@@ -31,6 +31,7 @@ Se `server/migrations/001_init.sql` (Postgres) och `shared/src/tables.ts` (zod-s
 | Register | `clubs`, `players`, `registrations`, `media` |
 | Tävling | `seasons`, `competitions`, `teams`, `squad_members`, `venues`, `matches` |
 | Matchrapport | `match_reports` (id = match-id), `match_lineups`, `match_events` |
+| Övergångar | `transfers` |
 | Disciplin | `suspensions` (manuella avstängningar). Kortregler finns på `competitions`. |
 | Synkhantering | `applied_mutations`, `conflict_log` |
 | Inloggning | `auth_tokens` (engångslänkar för inbjudan och nytt lösenord, synkas inte) |
@@ -109,6 +110,29 @@ rapport har synkats.
   göra undantag. Rader som lades in innan avstängningen blev känd kan fortfarande redigeras och
   markeras som avstängda i appen.
 - **Synlighet:** `suspensions` synkas med samma regler som `players`.
+
+### Övergångar
+
+```
+pending_club ──(nuvarande klubb släpper)──▶ pending_federation ──(förbundet)──▶ approved
+     │                                            │
+     └──────── rejected / cancelled ◀─────────────┘
+```
+
+- **Ansökan:** Den mottagande klubbens admin skapar övergången. Förbundsadmin kan också göra det åt en klubb.
+  Servern sätter `from_club_id` (spelarens nuvarande klubb) och startsteget, oavsett vad appen skickar.
+  En spelare utan klubb hoppar över steget där klubben släpper spelaren.
+- **Stegen:** Den nuvarande klubben släpper spelaren eller avslår. Den mottagande klubben kan dra tillbaka sin ansökan.
+  Förbundet kan godkänna först när spelaren har släppts, men kan avslå när som helst.
+  Reglerna finns i `shared/src/transfers.ts` och används av både servern och appen.
+- **Bara en öppen övergång per spelare.** Har spelaren hunnit byta klubb på annat sätt avvisas
+  steget (`transfer_outdated`).
+- **När förbundet godkänner** flyttas spelaren (`players.club_id`), tas bort ur den gamla klubbens
+  trupper och registreras för säsongen i den nya klubben.
+- **Hitta spelaren:** En klubbadmin ser inte andra klubbars spelare. Den mottagande klubben söker därför online
+  (`GET /api/players/search`) på licensnummer, eller på fullständigt namn tillsammans med födelsedatum.
+  Svaret innehåller bara namn, födelseår och klubb. Medan ansökan är öppen ser klubben spelaren i synken.
+- **Synlighet:** De två klubbarna och förbundet ser övergången.
 
 ### Inbjudningar och nytt lösenord
 

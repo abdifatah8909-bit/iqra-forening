@@ -1,6 +1,9 @@
 import {
+  initialTransferStatus,
   LOCALES,
   LOCKED_REPORT_STATUSES,
+  transferActions,
+  uuidv7,
   scoreFromEvents,
   type MutationResult,
   type PublicData,
@@ -8,7 +11,9 @@ import {
   type ReportStatus,
   type Locale,
   type Role,
+  type TransferStatus,
 } from '@fotboll/shared';
+import type { PlayerSearchHit } from './pages/Transfers';
 import { db } from './db';
 import { startSession, type Me } from './session';
 import type { Transport } from './sync';
@@ -103,6 +108,13 @@ export const demoTransport: Transport = {
         Object.assign(row, { decided_by: me?.id, decided_at: now });
         if (m.data.status === 'approved') await db.data('players').update(row.player_id as string, { club_id: row.club_id as string });
       }
+      if (m.table === 'transfers') {
+        const rejection = await demoTransfer(m.data, row, local, me, now);
+        if (rejection) {
+          results.push({ id: m.id, status: 'rejected', reason: rejection, row: local?.server_seq ? local : null });
+          continue;
+        }
+      }
       if (m.table === 'media') row.upload_status = 'done';
       results.push({ id: m.id, status: 'ok', row });
     }
@@ -140,4 +152,78 @@ export async function demoPublicData(): Promise<PublicData> {
       .filter((r) => LOCKED_REPORT_STATUSES.includes(r.status as ReportStatus))
       .map((r) => ({ id: r.id as string, home_score: r.home_score as number, away_score: r.away_score as number })),
   };
+}
+
+/** The server's transfer rules and side effects, imitated for the demo. */
+async function demoTransfer(
+  patch: Record<string, unknown>,
+  row: Record<string, unknown>,
+  local: Record<string, unknown> | undefined,
+  me: Me | undefined,
+  now: string,
+): Promise<string | null> {
+  const actor = {
+    isFedAdmin: !!me?.roles.some((r) => r.role === 'federation_admin'),
+    clubIds: me?.roles.filter((r) => r.role === 'club_admin').map((r) => r.club_id!) ?? [],
+  };
+  const player = await db.data('players').get(row.player_id as string);
+  if ('player_id' in patch) {
+    // New request: the starting point follows the player's current club.
+    const from = player?.club_id ?? null;
+    if (from === row.to_club_id) return 'already_in_club';
+    Object.assign(row, { from_club_id: from, status: initialTransferStatus(from), requested_by: me?.id });
+    return null;
+  }
+  const target = patch.status as TransferStatus | undefined;
+  if (!target || !local) return null;
+  // The local row already shows the new status (optimistic), so work out the step it came from.
+  const previous: TransferStatus =
+    target === 'approved' || local.released_at || !local.from_club_id ? 'pending_federation' : 'pending_club';
+  if (row.decided_at || (target === 'pending_federation' && row.released_at)) return null; // already applied
+  const state = { status: previous, from_club_id: (local.from_club_id as string) ?? null, to_club_id: row.to_club_id as string };
+  if (!transferActions(state, actor).includes(target)) return 'forbidden';
+  if (target === 'pending_federation') Object.assign(row, { released_by: me?.id, released_at: now });
+  if (target === 'approved' || target === 'rejected') Object.assign(row, { decided_by: me?.id, decided_at: now });
+  if (target === 'approved' && player) {
+    const to = row.to_club_id as string;
+    await db.data('players').update(player.id, { club_id: to });
+    const teams = new Map((await db.data('teams').toArray()).map((x) => [x.id, x.club_id]));
+    for (const sm of await db.data('squad_members').where('player_id').equals(player.id).toArray()) {
+      if (teams.get(sm.team_id) !== to) await db.data('squad_members').delete(sm.id);
+    }
+    const today = now.slice(0, 10);
+    const seasons = await db.data('seasons').orderBy('starts_on').reverse().toArray();
+    const season = seasons.find((x) => x.starts_on <= today && today <= x.ends_on) ?? seasons[0];
+    if (season) {
+      await db.data('registrations').put({
+        id: uuidv7(), player_id: player.id, club_id: to, season_id: season.id, status: 'approved', note: 'transfer',
+        decided_by: me?.id ?? null, decided_at: now, federation_id: player.federation_id, created_at: now,
+        updated_at: now, updated_by: me?.id ?? null, deleted_at: null, server_seq: ++seq,
+      });
+    }
+  }
+  return null;
+}
+
+/** Player search for transfer requests, against this browser's copy of the data. */
+export async function demoSearchPlayers(q: Record<string, string>): Promise<PlayerSearchHit[]> {
+  const lower = (v: unknown) => String(v ?? '').trim().toLowerCase();
+  const clubs = new Map((await db.data('clubs').toArray()).map((c) => [c.id, c.name]));
+  const open = new Set(
+    (await db.data('transfers').toArray()).filter((x) => x.status === 'pending_club' || x.status === 'pending_federation').map((x) => x.player_id),
+  );
+  const players = (await db.data('players').toArray()).filter((p) =>
+    q.license_no
+      ? lower(p.license_no) === lower(q.license_no)
+      : lower(p.first_name) === lower(q.first_name) && lower(p.last_name) === lower(q.last_name) && p.birth_date === q.birth_date,
+  );
+  return players.slice(0, 10).map((p) => ({
+    id: p.id,
+    first_name: p.first_name,
+    last_name: p.last_name,
+    birth_year: Number(p.birth_date.slice(0, 4)),
+    club_id: p.club_id ?? null,
+    club_name: p.club_id ? (clubs.get(p.club_id) ?? null) : null,
+    open_transfer: open.has(p.id),
+  }));
 }

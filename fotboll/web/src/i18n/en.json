@@ -81,7 +81,7 @@
     "team_not_in_match": "The team is not playing in this match.",
     "team_not_in_competition": "Both teams must belong to the competition.",
     "photo_consent_required": "A photo of a player under 18 needs guardian consent.",
-    "transfer_requires_federation": "Transfers from another club are handled by the federation.",
+    "transfer_requires_federation": "A player from another club joins through a transfer request.",
     "registration_decided": "The registration has already been decided.",
     "deleted": "This was deleted by someone else.",
     "duplicate": "This already exists.",
@@ -92,7 +92,10 @@
     "network": "No connection to the server.",
     "unknown": "Something went wrong.",
     "link_invalid": "The link has expired or has already been used. Ask your administrator for a new one.",
-    "player_suspended": "The player is suspended for this match."
+    "player_suspended": "The player is suspended for this match.",
+    "already_in_club": "The player already belongs to that club.",
+    "transfer_decided": "The transfer has already been decided.",
+    "transfer_outdated": "The player has changed club since the request. Make a new request."
   },
   "home": {
     "hello": "Hello, {{name}}",
@@ -370,5 +373,49 @@
     "red_ban": "Matches banned for a red card",
     "second_yellow_ban": "Matches banned for a second yellow",
     "yellow_limit_hint": "0 turns the rule off."
+  },
+  "transfer": {
+    "title": "Transfers",
+    "intro": "The new club applies, the current club releases the player, and then the federation approves.",
+    "new": "Request a transfer",
+    "tab_todo": "To handle",
+    "tab_open": "In progress",
+    "tab_done": "Finished",
+    "to_handle": "Transfers to handle",
+    "status": {
+      "pending_club": "Waiting for the club",
+      "pending_federation": "Waiting for the federation",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Withdrawn"
+    },
+    "step": {
+      "requested": "{{club}} applies",
+      "released": "{{club}} releases the player",
+      "approved": "The federation approves"
+    },
+    "action": {
+      "pending_federation": "Release player",
+      "approved": "Approve transfer",
+      "rejected": "Reject",
+      "cancelled": "Withdraw request"
+    },
+    "confirm": {
+      "pending_federation": "Release {{player}} to {{club}}? The federation decides next.",
+      "approved": "Approve the transfer of {{player}} to {{club}}? The player moves club right away.",
+      "rejected": "Reject the transfer of {{player}} to {{club}}?",
+      "cancelled": "Withdraw the request for {{player}}?"
+    },
+    "note": "Message",
+    "response_note": "Answer",
+    "response_label": "Comment (optional)",
+    "note_label": "Message to the club and the federation (optional)",
+    "to_club": "To club",
+    "search_intro": "Find the player by licence number, or by full name and date of birth. Needs an internet connection.",
+    "by_name": "Name and date of birth",
+    "no_hits": "No player found. Check the spelling or the licence number.",
+    "already_in_club": "Already in this club",
+    "has_open": "Already has an open transfer",
+    "apply": "Apply"
   }
 }

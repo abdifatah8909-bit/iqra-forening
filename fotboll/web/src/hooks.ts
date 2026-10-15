@@ -96,7 +96,11 @@ export const can = {
     isFedAdmin(me) || (!isReportLocked(report) && match.referee_user_id === me.id),
   submitReport: (me: Me, match: Match, report: MatchReport | undefined) =>
     match.referee_user_id === me.id && !isReportLocked(report),
+  requestTransfer: (me: Me) => isFedAdmin(me) || adminClubIds(me).length > 0,
 };
+
+/** The person as a party to transfers (see shared/src/transfers.ts). */
+export const transferActor = (me: Me) => ({ isFedAdmin: isFedAdmin(me), clubIds: adminClubIds(me) });
 
 /** The season that contains today, else the most recent one. */
 export function useCurrentSeason() {

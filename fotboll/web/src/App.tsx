@@ -17,6 +17,7 @@ import { MorePage } from './pages/More';
 import { PlayerPage } from './pages/Player';
 import { SetPasswordPage } from './pages/SetPassword';
 import { TeamPage } from './pages/Team';
+import { TransfersPage } from './pages/Transfers';
 import { PublicSite } from './public/PublicSite';
 
 export function App() {
@@ -65,6 +66,7 @@ function MemberApp() {
         <Route path="/players/:id" element={<PlayerPage />} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/transfers" element={<TransfersPage />} />
         <Route path="*" element={<HomePage />} />
       </Routes>
       <BottomNav />

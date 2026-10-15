@@ -7,10 +7,13 @@ import type { Db } from '../db.js';
  * What a user may see. Everything competition-related (clubs, fixtures,
  * results, lineups) is shared across the federation so schedules and tables
  * work offline for everyone. Personal data is minimised (GDPR):
- *  - players: federation admins see all; club admins their own club;
+ *  - players: federation admins see all; club admins their own club (and
+ *    players they have applied for);
  *    referees the squads of teams in matches they are assigned to.
  *  - registrations: federation admins and the club concerned.
  *  - suspensions: like players.
+ *  - transfers: the federation and the two clubs involved. A club admin also
+ *    sees a player from another club while their club's transfer request is open.
  *  - users: only id and display name.
  */
 interface Scope {
@@ -21,6 +24,23 @@ interface Scope {
 async function computeScope(db: Db, ctx: UserContext): Promise<Scope> {
   let refereeTeamIds: string[] = [];
   let squadFingerprint = '';
+  let clubFingerprint = '';
+  if (!ctx.isFedAdmin && ctx.clubIds.length) {
+    // Which players a club admin sees: their own, plus players their club has applied for.
+    // A player joining or leaving that set must reach the device (or be removed from it),
+    // which an incremental pull cannot do, so it changes the scope.
+    clubFingerprint =
+      (
+        await db.query<{ fp: string | null }>(
+          `select md5(string_agg(id::text, ',' order by id)) as fp from (
+             select id from players where club_id = any($1) and federation_id = $2
+             union
+             select player_id from transfers where to_club_id = any($1) and federation_id = $2
+               and status in ('pending_club', 'pending_federation') and deleted_at is null) v`,
+          [ctx.clubIds, ctx.federationId],
+        )
+      ).rows[0].fp ?? '';
+  }
   if (!ctx.isFedAdmin && ctx.isReferee) {
     refereeTeamIds = (
       await db.query<{ team_id: string }>(
@@ -47,6 +67,7 @@ async function computeScope(db: Db, ctx: UserContext): Promise<Scope> {
         clubs: [...ctx.clubIds].sort(),
         teams: refereeTeamIds,
         squads: squadFingerprint,
+        players: clubFingerprint,
       }),
     )
     .digest('hex')
@@ -73,7 +94,16 @@ function tableQuery(table: SyncTable, ctx: UserContext, scope: Scope): { sql: st
       if (!ctx.isFedAdmin) {
         params.push(ctx.clubIds, scope.refereeTeamIds);
         where += ` and (club_id = any($2) or id in (
-          select player_id from squad_members where team_id = any($3) and deleted_at is null))`;
+          select player_id from squad_members where team_id = any($3) and deleted_at is null) or id in (
+          select player_id from transfers where to_club_id = any($2)
+            and status in ('pending_club', 'pending_federation') and deleted_at is null))`;
+      }
+      break;
+    case 'transfers':
+      // The two clubs involved and the federation.
+      if (!ctx.isFedAdmin) {
+        params.push(ctx.clubIds);
+        where += ' and (from_club_id = any($2) or to_club_id = any($2))';
       }
       break;
     case 'suspensions':

@@ -25,6 +25,10 @@ export const MATCH_STATUSES = ['scheduled', 'played', 'postponed', 'cancelled'] 
 export const REPORT_STATUSES = ['draft', 'submitted', 'approved', 'reopened'] as const;
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
 export const REGISTRATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
+export const TRANSFER_STATUSES = ['pending_club', 'pending_federation', 'approved', 'rejected', 'cancelled'] as const;
+export type TransferStatus = (typeof TRANSFER_STATUSES)[number];
+/** Transfers in these states are still open; a player can have only one. */
+export const OPEN_TRANSFER_STATUSES: TransferStatus[] = ['pending_club', 'pending_federation'];
 export const EVENT_TYPES = [
   'goal',
   'penalty_goal',
@@ -165,6 +169,18 @@ export const schemas = {
     added_time: z.number().int().min(0).max(30).nullable().optional(),
   }),
   /**
+   * Transfer to another club. The receiving club applies; the current club
+   * (`from_club_id`, set by the server) releases; the federation approves.
+   */
+  transfers: z.object({
+    id: uuid,
+    player_id: uuid,
+    to_club_id: uuid,
+    status: z.enum(TRANSFER_STATUSES),
+    note: optText(500),
+    response_note: optText(500),
+  }),
+  /**
    * Manual suspension decided by the federation, either a number of matches
    * in one competition (from `starts_on`) or every match in a date range.
    * Automatic bans from cards are derived, not stored (see discipline.ts).
@@ -232,6 +248,15 @@ export type MatchReport = Inferred<'match_reports'> &
 export type MatchLineup = Inferred<'match_lineups'> & SyncMeta;
 export type MatchEvent = Inferred<'match_events'> & SyncMeta & { recorded_by: string | null };
 export type Suspension = Inferred<'suspensions'> & SyncMeta;
+export type Transfer = Inferred<'transfers'> &
+  SyncMeta & {
+    from_club_id: string | null;
+    requested_by: string | null;
+    released_by: string | null;
+    released_at: string | null;
+    decided_by: string | null;
+    decided_at: string | null;
+  };
 export type UserProfile = { id: string; display_name: string; is_referee: boolean } & SyncMeta;
 
 export interface RowTypes {
@@ -250,6 +275,7 @@ export interface RowTypes {
   match_lineups: MatchLineup;
   match_events: MatchEvent;
   suspensions: Suspension;
+  transfers: Transfer;
   user_profiles: UserProfile;
 }
 

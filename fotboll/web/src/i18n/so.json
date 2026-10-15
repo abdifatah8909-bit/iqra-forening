@@ -81,7 +81,7 @@
     "team_not_in_match": "Kooxdu kama ciyaarayso ciyaartan.",
     "team_not_in_competition": "Labada kooxood waa inay ka tirsan yihiin horyaalka.",
     "photo_consent_required": "Sawirka ciyaaryahan ka yar 18 sano wuxuu u baahan yahay oggolaanshaha waalidka.",
-    "transfer_requires_federation": "Wareejinta koox kale waxaa maamula xiriirka.",
+    "transfer_requires_federation": "Ciyaaryahan kooxo kale ka yimid wuxuu ku soo biiraa codsi wareejin.",
     "registration_decided": "Diiwaangelinta go'aan ayaa horey looga gaadhay.",
     "deleted": "Qof kale ayaa tirtiray.",
     "duplicate": "Horey ayuu u jiray.",
@@ -92,7 +92,10 @@
     "network": "Xidhiidh lama helin server-ka.",
     "unknown": "Wax ayaa khaldamay.",
     "link_invalid": "Xiriirku wuu dhacay ama horay ayaa loo isticmaalay. Weydii maamulahaaga mid cusub.",
-    "player_suspended": "Ciyaaryahanku wuu ganaaxan yahay ciyaartan."
+    "player_suspended": "Ciyaaryahanku wuu ganaaxan yahay ciyaartan.",
+    "already_in_club": "Ciyaaryahanku horay ayuu ugu jiraa kooxdaas.",
+    "transfer_decided": "Wareejinta horay ayaa go’aan looga gaaray.",
+    "transfer_outdated": "Ciyaaryahanku wuu beddelay kooxda tan iyo codsiga. Samee codsi cusub."
   },
   "home": {
     "hello": "Soo dhawoow, {{name}}",
@@ -370,5 +373,49 @@
     "red_ban": "Ciyaaraha ganaaxa kaarka casaanka",
     "second_yellow_ban": "Ciyaaraha ganaaxa jaallaha labaad",
     "yellow_limit_hint": "0 waxay damisaa xeerka."
+  },
+  "transfer": {
+    "title": "Wareejinta",
+    "intro": "Kooxda cusub ayaa codsata, kooxda hadda ayaa sii daysa ciyaaryahanka, kadibna ururka ayaa ansixiya.",
+    "new": "Codso wareejin",
+    "tab_todo": "In la qabto",
+    "tab_open": "Socda",
+    "tab_done": "Dhammaaday",
+    "to_handle": "Wareejinno sugaya go’aankaaga",
+    "status": {
+      "pending_club": "Waxay sugaysaa kooxda",
+      "pending_federation": "Waxay sugaysaa ururka",
+      "approved": "La ansixiyay",
+      "rejected": "La diiday",
+      "cancelled": "La laabtay"
+    },
+    "step": {
+      "requested": "{{club}} ayaa codsatay",
+      "released": "{{club}} ayaa sii daysa ciyaaryahanka",
+      "approved": "Ururka ayaa ansixiya"
+    },
+    "action": {
+      "pending_federation": "Sii dayso ciyaaryahanka",
+      "approved": "Ansixi wareejinta",
+      "rejected": "Diid",
+      "cancelled": "Ka noqo codsiga"
+    },
+    "confirm": {
+      "pending_federation": "Ma u sii daynaysaa {{player}} {{club}}? Ururka ayaa go’aaminaya marka xigta.",
+      "approved": "Ma ansixinaysaa wareejinta {{player}} ee {{club}}? Ciyaaryahanku isla markiiba wuu beddelayaa kooxda.",
+      "rejected": "Ma diidaysaa wareejinta {{player}} ee {{club}}?",
+      "cancelled": "Ma ka noqonaysaa codsiga {{player}}?"
+    },
+    "note": "Fariin",
+    "response_note": "Jawaab",
+    "response_label": "Faallo (ikhtiyaari)",
+    "note_label": "Fariin kooxda iyo ururka (ikhtiyaari)",
+    "to_club": "Kooxda loo wareejinayo",
+    "search_intro": "Ku raadi ciyaaryahanka lambarka ruqsadda, ama magaca buuxa iyo taariikhda dhalashada. Waxay u baahan tahay internet.",
+    "by_name": "Magaca iyo taariikhda dhalashada",
+    "no_hits": "Ciyaaryahan lama helin. Hubi higgaadda ama lambarka ruqsadda.",
+    "already_in_club": "Horay ayuu ugu jiraa kooxdan",
+    "has_open": "Wuxuu leeyahay wareejin socota",
+    "apply": "Codso"
   }
 }

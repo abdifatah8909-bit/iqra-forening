@@ -192,3 +192,11 @@ a.button { text-decoration: none; }
 .public-nav { display: flex; gap: 4px; padding: 8px 16px; background: var(--card); border-block-end: 1px solid var(--line); overflow-x: auto; position: sticky; inset-block-start: calc(56px + env(safe-area-inset-top)); z-index: 9; }
 .public-nav a { padding: 8px 12px; border-radius: 999px; color: var(--muted); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
 .public-nav a.active { background: var(--brand-soft); color: var(--brand-dark); }
+
+/* Transfer progress: requested → released → approved */
+.steps { list-style: none; padding: 0; margin: 8px 0 10px; display: grid; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+.steps li { display: flex; align-items: center; gap: 8px; }
+.steps li::before { content: ''; inline-size: 10px; block-size: 10px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.steps li.done { color: var(--ink); }
+.steps li.done::before { background: var(--brand); border-color: var(--brand); }
+.steps li.stopped::before { border-color: var(--red); }

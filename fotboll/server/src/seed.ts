@@ -150,6 +150,13 @@ export async function seed(db: Db) {
       if (i === 0) upsert('match_events', { match_id: matchId, team_id: f.home_team_id, player_id: home[4], type: 'red', minute: 71 });
       upsert('match_reports', { id: matchId, status: 'submitted', home_score: hg, away_score: ag });
     });
+  // An open transfer for the demo: Hiiraan FC wants a player from Iqra IF, who must release him first.
+  upsert('transfers', {
+    player_id: squads[0][13],
+    to_club_id: clubIds[1],
+    status: 'pending_club',
+    note: 'Spelaren har flyttat till Stockholm.',
+  });
   const res = await push(db, admin, mutations);
   const rejected = res.filter((r) => r.status !== 'ok');
   if (rejected.length) throw new Error(`Seed rejected: ${JSON.stringify(rejected.slice(0, 3))}`);

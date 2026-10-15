@@ -18,6 +18,7 @@ import { withTx, type Db } from './db.js';
 import { registerAdminRoutes } from './admin.js';
 import { createMailer, type Mailer } from './mail.js';
 import { registerMediaRoutes } from './media.js';
+import { registerPlayerSearch } from './player-search.js';
 import { registerPublicRoutes } from './public.js';
 import { createAuthToken, emailToken, findAuthToken, markTokenUsed, NO_PASSWORD } from './tokens.js';
 import { pull } from './sync/pull.js';
@@ -211,6 +212,7 @@ export async function buildApp({
   registerMediaRoutes(app, db, mediaDir);
   registerAdminRoutes(app, db, mediaDir, { mailer, publicUrl });
   registerPublicRoutes(app, db, mediaDir);
+  registerPlayerSearch(app, db);
 
   if (webDist && existsSync(webDist)) {
     await app.register(fastifyStatic, { root: webDist, wildcard: false });
