@@ -6,7 +6,7 @@ import { LOCALES, ROLES, type Role } from '@fotboll/shared';
 import { api, ApiError } from '../api';
 import { Empty, Field, MatchCard, TopBar, useToast } from '../components';
 import { db } from '../db';
-import { playerName, useLookups, useOnline } from '../hooks';
+import { activeBansFor, playerName, useBanLabel, useBans, useLookups, useOnline } from '../hooks';
 import { LANGUAGE_NAMES } from '../i18n';
 import { save } from '../mutate';
 import { DEMO } from '../demo';
@@ -16,6 +16,8 @@ interface AdminUser {
   email: string;
   display_name: string;
   is_active: boolean;
+  /** Invited but has not chosen a password yet. */
+  invited: boolean;
   roles: { role: Role; club_id: string | null }[];
 }
 
@@ -65,6 +67,8 @@ export function AdminPage() {
           ))}
         </div>
 
+        <ActiveBans />
+
         <h2>{t('admin.venues')}</h2>
         <div className="list">
           {data.venues.map((v) => (
@@ -80,6 +84,36 @@ export function AdminPage() {
 
         <Users />
       </main>
+    </>
+  );
+}
+
+/** Everyone currently suspended, so the federation can follow up before match day. */
+function ActiveBans() {
+  const { t } = useTranslation();
+  const bans = useBans();
+  const banLabel = useBanLabel();
+  const { players, teams } = useLookups();
+  const playerIds = [...new Set(bans.map((b) => b.player_id))];
+  const rows = playerIds.flatMap((id) => activeBansFor(bans, id));
+  return (
+    <>
+      <h2>{t('discipline.active_title')}</h2>
+      <div className="list">
+        {rows.length === 0 && <Empty />}
+        {rows.map((b) => (
+          <Link key={b.key} to={`/players/${b.player_id}`}>
+            <span className="grow">
+              <div>{playerName(players.get(b.player_id)) || t('match.unknown_player')}</div>
+              <div className="sub">
+                {b.team_id ? teams.get(b.team_id)?.name : t('discipline.all_competitions')} ·{' '}
+                {b.reasons.map((r) => t(`discipline.reason.${r}`)).join(' + ')}
+              </div>
+            </span>
+            <span className="chip ban">{banLabel(b)}</span>
+          </Link>
+        ))}
+      </div>
     </>
   );
 }
@@ -110,6 +144,13 @@ function VenueForm() {
   );
 }
 
+interface IssuedLink {
+  name: string;
+  purpose: 'invite' | 'reset';
+  token: string;
+  emailed: boolean;
+}
+
 /** Accounts live only on the server (passwords), so this section needs a connection. */
 function Users() {
   const { t } = useTranslation();
@@ -119,6 +160,8 @@ function Users() {
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<Role>('referee');
+  const [ownPassword, setOwnPassword] = useState(false);
+  const [issued, setIssued] = useState<IssuedLink | null>(null);
 
   const load = useCallback(() => {
     api<AdminUser[]>('/admin/users')
@@ -136,11 +179,23 @@ function Users() {
         <p className="notice">{t('demo.no_server')}</p>
       </>
     );
+
+  const newLink = async (u: AdminUser) => {
+    try {
+      const link = await api<Omit<IssuedLink, 'name'>>(`/admin/users/${u.id}/link`, { method: 'POST' });
+      setIssued({ ...link, name: u.display_name });
+      setError(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.code : 'unknown');
+    }
+  };
+
   return (
     <>
       <h2>{t('admin.users')}</h2>
       {!online && <p className="notice">{t('common.online_only')}</p>}
       {error && <p className="error-text">{t(`errors.${error}`, { defaultValue: t('errors.unknown') })}</p>}
+      {issued && <LinkCard link={issued} onClose={() => setIssued(null)} />}
       {users && (
         <div className="list">
           {users.map((u) => (
@@ -157,19 +212,27 @@ function Users() {
                       {r.club_id ? ` · ${clubs.get(r.club_id)?.name ?? ''}` : ''}
                     </span>
                   ))}
+                  {u.invited && <span className="chip warn">{t('admin.invited')}</span>}
                   {!u.is_active && <span className="chip grey">{t('admin.inactive')}</span>}
                 </div>
               </span>
-              <button
-                className="secondary small"
-                disabled={!online}
-                onClick={async () => {
-                  await api(`/admin/users/${u.id}`, { method: 'PATCH', json: { is_active: !u.is_active } });
-                  load();
-                }}
-              >
-                {u.is_active ? t('admin.deactivate') : t('admin.activate')}
-              </button>
+              <span style={{ display: 'grid', gap: 6 }}>
+                {u.is_active && (
+                  <button className="secondary small" disabled={!online} onClick={() => newLink(u)}>
+                    {u.invited ? t('admin.new_invite') : t('admin.reset_link')}
+                  </button>
+                )}
+                <button
+                  className="secondary small"
+                  disabled={!online}
+                  onClick={async () => {
+                    await api(`/admin/users/${u.id}`, { method: 'PATCH', json: { is_active: !u.is_active } });
+                    load();
+                  }}
+                >
+                  {u.is_active ? t('admin.deactivate') : t('admin.activate')}
+                </button>
+              </span>
             </div>
           ))}
         </div>
@@ -180,19 +243,22 @@ function Users() {
           e.preventDefault();
           const form = e.currentTarget;
           const f = new FormData(form);
+          const name = f.get('display_name') as string;
           try {
-            await api('/admin/users', {
+            const res = await api<{ id: string; link?: Omit<IssuedLink, 'name'> }>('/admin/users', {
               method: 'POST',
               json: {
                 email: f.get('email'),
-                display_name: f.get('display_name'),
-                password: f.get('password'),
+                display_name: name,
+                ...(ownPassword ? { password: f.get('password') } : {}),
                 locale: f.get('locale'),
                 roles: [{ role, club_id: role === 'club_admin' ? f.get('club_id') : null }],
               },
             });
             form.reset();
-            toast.show(t('admin.user_created'));
+            setOwnPassword(false);
+            if (res.link) setIssued({ ...res.link, name });
+            else toast.show(t('admin.user_created'));
             setError(null);
             load();
           } catch (err) {
@@ -206,9 +272,6 @@ function Users() {
         </Field>
         <Field label={t('auth.email')}>
           <input name="email" type="email" required dir="ltr" />
-        </Field>
-        <Field label={t('auth.password')}>
-          <input name="password" type="password" minLength={8} required dir="ltr" autoComplete="new-password" />
         </Field>
         <div className="grid2">
           <Field label={t('admin.roles')}>
@@ -241,9 +304,66 @@ function Users() {
             </select>
           </Field>
         )}
-        <button disabled={!online}>{t('common.add')}</button>
+        <label className="check">
+          <input type="checkbox" checked={ownPassword} onChange={(e) => setOwnPassword(e.target.checked)} />
+          {t('admin.set_password_myself')}
+        </label>
+        {ownPassword ? (
+          <Field label={t('auth.password')}>
+            <input name="password" type="password" minLength={8} required dir="ltr" autoComplete="new-password" />
+          </Field>
+        ) : (
+          <p className="muted small">{t('admin.invite_note')}</p>
+        )}
+        <button disabled={!online}>{ownPassword ? t('common.add') : t('admin.invite')}</button>
       </form>
       {toast.node}
     </>
+  );
+}
+
+/**
+ * Shows a fresh invitation or reset link. It is emailed when the server can,
+ * and can always be passed on by hand: many users are easier to reach on WhatsApp.
+ */
+function LinkCard({ link, onClose }: { link: IssuedLink; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const url = `${location.origin}/set-password/${link.token}`;
+  const message = t(link.purpose === 'invite' ? 'admin.share_invite' : 'admin.share_reset', { name: link.name, link: url });
+  return (
+    <div className="card" style={{ borderColor: 'var(--green)' }}>
+      <h3 style={{ marginBlockEnd: 8 }}>{link.purpose === 'invite' ? t('admin.invite_ready', { name: link.name }) : t('admin.reset_ready', { name: link.name })}</h3>
+      <p className="small">{link.emailed ? t('admin.link_emailed') : t('admin.link_not_emailed')}</p>
+      <input readOnly value={url} dir="ltr" onFocus={(e) => e.target.select()} style={{ marginBlockEnd: 8 }} />
+      <div className="row">
+        <button
+          type="button"
+          className="small"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(url);
+              setCopied(true);
+            } catch {
+              // Clipboard blocked: the field above can still be selected by hand.
+            }
+          }}
+        >
+          {copied ? t('admin.copied') : t('admin.copy')}
+        </button>
+        <a className="button secondary small" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">
+          WhatsApp
+        </a>
+        <a className="button secondary small" href={`sms:?&body=${encodeURIComponent(message)}`}>
+          SMS
+        </a>
+        <button type="button" className="secondary small" onClick={onClose}>
+          {t('common.close')}
+        </button>
+      </div>
+      <p className="muted small" style={{ marginBlockStart: 8 }}>
+        {link.purpose === 'invite' ? t('admin.link_valid_invite') : t('admin.link_valid_reset')}
+      </p>
+    </div>
   );
 }

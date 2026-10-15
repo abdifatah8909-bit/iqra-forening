@@ -89,7 +89,7 @@ button, .button {
 }
 button.secondary, .button.secondary { background: var(--card); color: var(--green); }
 button.danger { background: var(--card); color: var(--red); border-color: var(--red); }
-button.small { min-block-size: 34px; padding: 0 10px; font-size: 0.85rem; }
+button.small, .button.small { min-block-size: 34px; padding: 0 10px; font-size: 0.85rem; }
 button.block { inline-size: 100%; }
 button:disabled { opacity: 0.5; cursor: default; }
 button.icon-btn { min-block-size: 34px; inline-size: 34px; padding: 0; background: none; color: var(--muted); border-color: var(--line); }
@@ -178,3 +178,17 @@ table.standings { border-collapse: collapse; inline-size: 100%; font-size: 0.9re
 .dialog { background: var(--card); border-radius: var(--radius); padding: 18px; inline-size: 100%; max-inline-size: 420px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
 .dialog p { margin-block-end: 16px; line-height: 1.45; }
 .demo-banner { background: var(--warn-bg); color: #5b4300; font-size: 0.8rem; text-align: center; padding: 6px 16px; }
+a.button { text-decoration: none; }
+.chip.ban { background: #fdecea; color: var(--red); }
+.cards-count { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+
+/* Public pages (no sign-in) */
+.public { min-height: 100dvh; padding-block-end: 24px; }
+.public-top { gap: 8px; }
+.public-logo { inline-size: 28px; block-size: 28px; border-radius: 6px; background: #fff; }
+.public-lang { inline-size: auto; min-block-size: 32px; padding: 2px 6px; border: 0; border-radius: 8px; font-size: 0.8rem; background: rgba(255, 255, 255, 0.15); color: #fff; }
+.public-lang option { color: var(--ink); }
+.public-login { color: #fff; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.public-nav { display: flex; gap: 4px; padding: 8px 16px; background: var(--card); border-block-end: 1px solid var(--line); overflow-x: auto; position: sticky; inset-block-start: calc(56px + env(safe-area-inset-top)); z-index: 9; }
+.public-nav a { padding: 8px 12px; border-radius: 999px; color: var(--muted); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
+.public-nav a.active { background: var(--green-soft); color: var(--green-dark); }

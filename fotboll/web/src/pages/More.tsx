@@ -33,6 +33,17 @@ export function MorePage() {
           </div>
         )}
 
+        <h2>{t('public.share_title')}</h2>
+        <div className="list">
+          <Link to={`/public/${me.federation_id}`}>
+            <span className="grow">
+              <div>{t('public.link')}</div>
+              <div className="sub">{t('public.share_text')}</div>
+            </span>
+            <span aria-hidden>›</span>
+          </Link>
+        </div>
+
         <h2>{t('settings.language')}</h2>
         <div className="segmented">
           {LOCALES.map((l) => (

@@ -10,7 +10,8 @@ const css = html.match(/<link rel="stylesheet" crossorigin href="\.\/(assets\/[^
 const script = readFileSync(path.join(dist, js), 'utf8').replaceAll('</script', '<\\/script');
 const style = readFileSync(path.join(dist, css), 'utf8');
 
-const page = `<title>Iqra Fotboll</title>
+const page = `<meta charset="utf-8">
+<title>Iqra Fotboll</title>
 <meta name="theme-color" content="#0b6e4f">
 <style>${style}</style>
 <div id="root"></div>

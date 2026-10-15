@@ -23,7 +23,8 @@
     "online_only": "Waxay u baahan tahay internet",
     "saved": "Waa la kaydiyay",
     "all": "Dhammaan",
-    "confirm": "Haa"
+    "confirm": "Haa",
+    "close": "Xir"
   },
   "auth": {
     "title": "Gal",
@@ -34,7 +35,22 @@
     "logout_pending_one": "Waxaad haysaa {{count}} isbeddel aan la diirin. Wuu lumayaa haddii aad hadda ka baxdo. Ma ka baxaysaa?",
     "logout_pending_other": "Waxaad haysaa {{count}} isbeddel oo aan la diirin. Way lumayaan haddii aad hadda ka baxdo. Ma ka baxaysaa?",
     "first_login_online": "Galitaanka koowaad wuxuu u baahan yahay internet. Kadib barnaamijku wuu shaqeeyaa internet la'aan.",
-    "session_expired": "Fadhigaagii wuu dhacay. Mar kale gal si aad u sii wadato isku-xidhka."
+    "session_expired": "Fadhigaagii wuu dhacay. Mar kale gal si aad u sii wadato isku-xidhka.",
+    "to_login": "Ku noqo galitaanka",
+    "welcome": "Soo dhawoow, {{name}}",
+    "new_password_title": "Dooro fure sir ah oo cusub",
+    "invite_intro": "Waa lagu martiqaaday. Dooro fure sir ah si aad u bilowdo isticmaalka barnaamijka.",
+    "reset_intro": "Dooro fure sir ah oo cusub. Waa lagaa saari doonaa qalabkaaga kale.",
+    "new_password": "Fure sir ah oo cusub",
+    "repeat_password": "Ku celi furaha sirta ah",
+    "password_rules": "Ugu yaraan 8 xaraf.",
+    "passwords_differ": "Furayaasha sirta ahi isku mid maaha.",
+    "save_password": "Kaydi furaha oo gal",
+    "forgot": "Ma ilowday furahaaga sirta ah?",
+    "forgot_title": "Waxaad ilowday furaha sirta ah",
+    "forgot_intro": "Geli cinwaanka iimaylkaaga, waxaan kuu soo diri doonnaa xiriir aad ku doorato fure cusub. Haddii iimayl uusan iman, weydii maamulaha ururkaaga xiriir cusub.",
+    "forgot_sent": "Haddii cinwaanku leeyahay akoon, xiriir ayaa ku soo socda. Eeg sanduuqaaga iyo galka spam-ka.",
+    "send_link": "Dir xiriirka"
   },
   "roles": {
     "federation_admin": "Maamulaha xiriirka",
@@ -74,7 +90,9 @@
     "too_many_attempts": "Isku day badan. Isku day 15 daqiiqo kadib.",
     "email_taken": "Iimaylkan horey ayaa loo isticmaalay.",
     "network": "Xidhiidh lama helin server-ka.",
-    "unknown": "Wax ayaa khaldamay."
+    "unknown": "Wax ayaa khaldamay.",
+    "link_invalid": "Xiriirku wuu dhacay ama horay ayaa loo isticmaalay. Weydii maamulahaaga mid cusub.",
+    "player_suspended": "Ciyaaryahanku wuu ganaaxan yahay ciyaartan."
   },
   "home": {
     "hello": "Soo dhawoow, {{name}}",
@@ -171,7 +189,8 @@
     "ends_on": "Dhammaanaya",
     "add_match": "Ku dar ciyaar",
     "home": "Guriga",
-    "away": "Safarka"
+    "away": "Safarka",
+    "edit_rules": "Dhibcaha iyo xeerarka kaararka"
   },
   "table": {
     "pos": "#",
@@ -273,7 +292,23 @@
     "new_venue": "Garoon cusub",
     "address": "Cinwaanka",
     "seasons": "Xilliyada",
-    "user_created": "Isticmaalaha waa la sameeyay"
+    "user_created": "Isticmaalaha waa la sameeyay",
+    "invited": "La martiqaaday",
+    "new_invite": "Martiqaad cusub",
+    "reset_link": "Xiriirka furaha",
+    "set_password_myself": "Anigu ha dejiyo furaha sirta ah",
+    "invite_note": "Qofku wuxuu helayaa xiriir uu ku doorto furihiisa sirta ah. U dir iimayl, WhatsApp ama SMS.",
+    "invite": "Martiqaad",
+    "share_invite": "Salaan {{name}}! Waxaad akoon ku leedahay Iqra Football. Halkan ka dooro furahaaga sirta ah: {{link}}",
+    "share_reset": "Salaan {{name}}! Halkan ka dooro fure sir ah oo cusub oo Iqra Football ah: {{link}}",
+    "invite_ready": "Martiqaadka {{name}}",
+    "reset_ready": "Xiriirka furaha ee {{name}}",
+    "link_emailed": "Xiriirka waa loo diray iimayl. Adiguna waad diri kartaa:",
+    "link_not_emailed": "Iimaylka laguma dejin server-ka. Adigu dir xiriirka:",
+    "copy": "Koobi xiriirka",
+    "copied": "Waa la koobiyeeyay",
+    "link_valid_invite": "Xiriirku hal mar ayuu shaqeeyaa, wuxuuna ansax yahay 14 maalmood.",
+    "link_valid_reset": "Xiriirku hal mar ayuu shaqeeyaa, wuxuuna ansax yahay 24 saacadood."
   },
   "settings": {
     "title": "Dejinta",
@@ -292,5 +327,48 @@
     "note": "Demo leh xog tusaale ah. Waxba looma diro server; isbeddelladu waxay ku jiraan browser-kan.",
     "banner": "Demo · xogta tusaalaha waxay ku jirtaa browser-kan",
     "no_server": "Akoonnada isticmaalayaasha waxaa lagu maamulaa server-ka, kaas oo demo-gu uusan lahayn."
+  },
+  "public": {
+    "link": "Natiijooyinka iyo shaxda",
+    "overview": "Guud ahaan",
+    "retry": "Isku day mar kale",
+    "updated": "La cusboonaysiiyay {{time}}",
+    "leagues": "Horyaallada",
+    "results": "Natiijooyinka",
+    "share_title": "Bogga dadweynaha",
+    "share_text": "Qof kasta halkan wuu kala socon karaa jadwalka, natiijooyinka iyo shaxda isagoon gelin. Xog ciyaartoy lama muujiyo."
+  },
+  "discipline": {
+    "title": "Kaararka iyo ganaaxyada",
+    "suspended": "Ganaaxan",
+    "banned_matches_one": "Ganaaxan · {{count}} ciyaar ayaa haray",
+    "banned_matches_other": "Ganaaxan · {{count}} ciyaarood ayaa haray",
+    "banned_until": "Ganaaxan ilaa {{date}}",
+    "reason": {
+      "red": "Kaar casaan",
+      "second_yellow": "Kaar jaalle labaad",
+      "yellow_accumulation": "Kaararka jaallaha",
+      "manual": "Go’aanka ururka"
+    },
+    "all_competitions": "Dhammaan tartamada",
+    "served": "{{served}} ka mid ah {{total}} ciyaarood ayaa la dhammaystiray",
+    "done": "La dhammaystiray",
+    "no_bans": "Ganaax ma jiro",
+    "delete_confirm": "Ma ka saaraysaa ganaaxan?",
+    "rules_note": "Ganaaxyadu waxay ka yimaadaan warbixinnada ciyaaraha ee la gudbiyay, waxaana lagu dhammaystiraa ciyaaraha xiga ee kooxda ee isla tartanka. Ciyaaraha dib loo dhigay ama la joojiyay lama tiriyo.",
+    "add": "Ku dar ganaax",
+    "by_matches": "Tirada ciyaaraha",
+    "by_dates": "Muddo taariikheed",
+    "competition": "Tartanka",
+    "matches": "Ciyaaraha",
+    "from": "Laga bilaabo",
+    "to": "Ilaa iyo",
+    "reason_label": "Sababta (ikhtiyaari)",
+    "active_title": "Ciyaartoyda ganaaxan",
+    "rules_title": "Xeerarka kaararka",
+    "yellow_limit": "Kaararka jaallaha ee keena ganaax hal ciyaar",
+    "red_ban": "Ciyaaraha ganaaxa kaarka casaanka",
+    "second_yellow_ban": "Ciyaaraha ganaaxa jaallaha labaad",
+    "yellow_limit_hint": "0 waxay damisaa xeerka."
   }
 }

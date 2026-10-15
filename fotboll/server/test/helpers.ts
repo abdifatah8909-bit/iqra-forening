@@ -6,6 +6,7 @@ import { uuidv7, type Mutation, type MutationResult, type PullResponse, type Wri
 import { buildApp } from '../src/app.js';
 import { hashPassword } from '../src/auth.js';
 import { createPool, withWriteLock, type Db } from '../src/db.js';
+import { memoryMailer } from '../src/mail.js';
 import { migrate } from '../src/migrate.js';
 
 export const TEST_DB = process.env.TEST_DATABASE_URL ?? 'postgres://postgres@localhost:5432/fotboll_test';
@@ -15,6 +16,7 @@ export interface TestEnv {
   db: Db;
   app: FastifyInstance;
   mediaDir: string;
+  mailer: ReturnType<typeof memoryMailer>;
   federationId: string;
   clubA: string;
   clubB: string;
@@ -27,7 +29,8 @@ export async function setup(): Promise<TestEnv> {
   await db.query('drop schema public cascade; create schema public;');
   await migrate(db);
   const mediaDir = await mkdtemp(path.join(os.tmpdir(), 'fotboll-media-'));
-  const app = await buildApp({ db, mediaDir });
+  const mailer = memoryMailer();
+  const app = await buildApp({ db, mediaDir, mailer, publicUrl: 'https://fotboll.test' });
 
   const federationId = uuidv7();
   const clubA = uuidv7();
@@ -63,7 +66,7 @@ export async function setup(): Promise<TestEnv> {
     referee: await login('ref@test.org'),
     referee2: await login('ref2@test.org'),
   };
-  return { db, app, mediaDir, federationId, clubA, clubB, tokens, userIds };
+  return { db, app, mediaDir, mailer, federationId, clubA, clubB, tokens, userIds };
 }
 
 export async function teardown(env: TestEnv) {

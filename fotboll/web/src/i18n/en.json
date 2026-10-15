@@ -23,7 +23,8 @@
     "online_only": "Needs an internet connection",
     "saved": "Saved",
     "all": "All",
-    "confirm": "OK"
+    "confirm": "OK",
+    "close": "Close"
   },
   "auth": {
     "title": "Sign in",
@@ -34,7 +35,22 @@
     "logout_pending_one": "You have {{count}} unsynced change. It will be lost if you sign out now. Sign out anyway?",
     "logout_pending_other": "You have {{count}} unsynced changes. They will be lost if you sign out now. Sign out anyway?",
     "first_login_online": "The first sign-in needs an internet connection. After that the app works offline.",
-    "session_expired": "Your session has expired. Sign in again to keep syncing."
+    "session_expired": "Your session has expired. Sign in again to keep syncing.",
+    "to_login": "Back to sign in",
+    "welcome": "Welcome, {{name}}",
+    "new_password_title": "Choose a new password",
+    "invite_intro": "You have been invited. Choose a password to start using the app.",
+    "reset_intro": "Choose a new password. You will be signed out on your other devices.",
+    "new_password": "New password",
+    "repeat_password": "Repeat the password",
+    "password_rules": "At least 8 characters.",
+    "passwords_differ": "The passwords are not the same.",
+    "save_password": "Save password and sign in",
+    "forgot": "Forgot your password?",
+    "forgot_title": "Forgot your password",
+    "forgot_intro": "Enter your email address and we will send you a link to choose a new password. If no email arrives, ask your federation administrator for a new link.",
+    "forgot_sent": "If the address has an account, a link is on its way. Check your inbox and spam folder.",
+    "send_link": "Send link"
   },
   "roles": {
     "federation_admin": "Federation admin",
@@ -74,7 +90,9 @@
     "too_many_attempts": "Too many attempts. Try again in 15 minutes.",
     "email_taken": "That email address is already in use.",
     "network": "No connection to the server.",
-    "unknown": "Something went wrong."
+    "unknown": "Something went wrong.",
+    "link_invalid": "The link has expired or has already been used. Ask your administrator for a new one.",
+    "player_suspended": "The player is suspended for this match."
   },
   "home": {
     "hello": "Hello, {{name}}",
@@ -171,7 +189,8 @@
     "ends_on": "Ends",
     "add_match": "Add match",
     "home": "Home",
-    "away": "Away"
+    "away": "Away",
+    "edit_rules": "Points and card rules"
   },
   "table": {
     "pos": "#",
@@ -273,7 +292,23 @@
     "new_venue": "New venue",
     "address": "Address",
     "seasons": "Seasons",
-    "user_created": "User created"
+    "user_created": "User created",
+    "invited": "Invited",
+    "new_invite": "New invitation",
+    "reset_link": "Password link",
+    "set_password_myself": "Set the password myself",
+    "invite_note": "The person gets a link to choose their own password. Share it by email, WhatsApp or SMS.",
+    "invite": "Invite",
+    "share_invite": "Hello {{name}}! You have an account in Iqra Football. Choose your password here: {{link}}",
+    "share_reset": "Hello {{name}}! Choose a new password for Iqra Football here: {{link}}",
+    "invite_ready": "Invitation for {{name}}",
+    "reset_ready": "Password link for {{name}}",
+    "link_emailed": "The link has been emailed. You can also send it yourself:",
+    "link_not_emailed": "Email is not set up on the server. Send the link yourself:",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "link_valid_invite": "The link works once and is valid for 14 days.",
+    "link_valid_reset": "The link works once and is valid for 24 hours."
   },
   "settings": {
     "title": "Settings",
@@ -292,5 +327,48 @@
     "note": "Demo with example data. Nothing is sent to a server; changes stay in this browser.",
     "banner": "Demo · example data stays in this browser",
     "no_server": "User accounts are managed on the server, which the demo doesn't have."
+  },
+  "public": {
+    "link": "Results and tables",
+    "overview": "Overview",
+    "retry": "Try again",
+    "updated": "Updated {{time}}",
+    "leagues": "Leagues",
+    "results": "Results",
+    "share_title": "Public page",
+    "share_text": "Anyone can follow fixtures, results and tables here, without signing in. No player details are shown."
+  },
+  "discipline": {
+    "title": "Cards and suspensions",
+    "suspended": "Suspended",
+    "banned_matches_one": "Suspended · {{count}} match left",
+    "banned_matches_other": "Suspended · {{count}} matches left",
+    "banned_until": "Suspended until {{date}}",
+    "reason": {
+      "red": "Red card",
+      "second_yellow": "Second yellow card",
+      "yellow_accumulation": "Yellow cards",
+      "manual": "Federation decision"
+    },
+    "all_competitions": "All competitions",
+    "served": "{{served}} of {{total}} matches served",
+    "done": "Served",
+    "no_bans": "No suspensions",
+    "delete_confirm": "Remove this suspension?",
+    "rules_note": "Suspensions come from submitted match reports and are served in the team’s next matches in the same competition. Postponed and cancelled matches do not count.",
+    "add": "Add suspension",
+    "by_matches": "Number of matches",
+    "by_dates": "Date range",
+    "competition": "Competition",
+    "matches": "Matches",
+    "from": "From",
+    "to": "To and including",
+    "reason_label": "Reason (optional)",
+    "active_title": "Suspended players",
+    "rules_title": "Card rules",
+    "yellow_limit": "Yellow cards for a one-match ban",
+    "red_ban": "Matches banned for a red card",
+    "second_yellow_ban": "Matches banned for a second yellow",
+    "yellow_limit_hint": "0 turns the rule off."
   }
 }

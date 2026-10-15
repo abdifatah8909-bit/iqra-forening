@@ -31,7 +31,9 @@ Se `server/migrations/001_init.sql` (Postgres) och `shared/src/tables.ts` (zod-s
 | Register | `clubs`, `players`, `registrations`, `media` |
 | Tävling | `seasons`, `competitions`, `teams`, `squad_members`, `venues`, `matches` |
 | Matchrapport | `match_reports` (id = match-id), `match_lineups`, `match_events` |
+| Disciplin | `suspensions` (manuella avstängningar). Kortregler finns på `competitions`. |
 | Synkhantering | `applied_mutations`, `conflict_log` |
+| Inloggning | `auth_tokens` (engångslänkar för inbjudan och nytt lösenord, synkas inte) |
 
 Alla synkade tabeller har kolumnerna `federation_id, created_at, updated_at, updated_by, deleted_at, server_seq`.
 
@@ -86,6 +88,48 @@ Klienten skickar sin kö i ordning, högst 200 ändringar per anrop:
 | Register | Fältvis senast-vinner. Överskrivna versioner loggas. |
 | Registreringar | Servern bestämmer. Bara förbundsadmin godkänner eller avslår, och ett godkännande flyttar spelaren till den nya klubben. |
 | Konton | Bara online (`/api/admin/*`), eftersom de innehåller lösenord och påverkar andra användare. |
+
+### Avstängningar
+
+Automatiska avstängningar sparas aldrig, precis som serietabellen. Funktionen `computeBans`
+(`shared/src/discipline.ts`) räknar fram dem på varje enhet från rapporter i status `submitted`
+eller `approved`. Därför vet en klubbadmin offline att en spelare är avstängd så fort domarens
+rapport har synkats.
+
+| Regel (per tävling) | Standard |
+|---|---|
+| Rött kort | `red_card_ban` = 1 match |
+| Två gula i samma match | `second_yellow_ban` = 1 match. De två gula korten räknas inte in i ackumuleringen. |
+| Ackumulerade gula kort | var `yellow_card_limit` = 3:e gula kort ger 1 match (0 stänger av regeln) |
+
+- **Avtjänas:** Avstängningen avtjänas i lagets nästa matcher i samma tävling. Uppskjutna och inställda matcher räknas inte.
+- **Manuella avstängningar** (`suspensions`) läggs in av förbundsadmin, på ett av två sätt: ett antal matcher
+  i en tävling från ett visst datum, eller alla matcher i ett datumintervall.
+- **Servern stoppar** avstängda spelare i `match_lineups` (`player_suspended`). Förbundsadmin kan
+  göra undantag. Rader som lades in innan avstängningen blev känd kan fortfarande redigeras och
+  markeras som avstängda i appen.
+- **Synlighet:** `suspensions` synkas med samma regler som `players`.
+
+### Inbjudningar och nytt lösenord
+
+- **Inbjudan:** När förbundsadmin skapar en användare utan lösenord får kontot `password_hash = '!'`,
+  som inget lösenord matchar. Samtidigt skapas en engångslänk (`/set-password/<token>`).
+- **Lagring:** Servern sparar bara en sha256-hash av token. Det är bara den senast skapade länken som gäller.
+  En inbjudan gäller i 14 dagar och en länk för nytt lösenord i 24 timmar.
+- **Utskick:** Länken mejlas om SMTP är inställt. Admin får den också tillbaka på skärmen, så att den kan delas via WhatsApp eller SMS.
+- **"Glömt lösenordet?"** svarar alltid likadant och mejlar länken i bakgrunden, så att svaret inte
+  avslöjar vilka adresser som har konton. Gränser: 3 försök per adress och timme, och 30 per IP-adress och timme.
+- **När länken används** sätts lösenordet, användaren loggas ut på alla andra enheter och loggas in direkt.
+
+### Publik sida
+
+`/public` i appen och `GET /api/public/...` på servern är öppna utan inloggning.
+
+- **Visas:** tävlingar, lag, klubbar (namn, ort och logotyp), arenor, spelschema och resultat från inskickade
+  eller godkända rapporter.
+- **Visas aldrig:** spelare, domare, användare, foton på spelare eller utkast till rapporter.
+- **Tabellen** räknas fram i webbläsaren med samma `computeStandings`.
+- **Svaren cachas** i 60 sekunder (`Cache-Control: public`).
 
 ### Foton
 

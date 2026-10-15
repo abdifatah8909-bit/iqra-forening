@@ -1,7 +1,7 @@
 import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { Match, MatchReport, Team } from '@fotboll/shared';
+import type { Match, MatchReport, StandingsRow, Team } from '@fotboll/shared';
 import { formatDateTime } from './i18n';
 import { addPhoto, useMediaUrl } from './media';
 import { useSyncState } from './hooks';
@@ -280,6 +280,57 @@ export function ConfirmHost() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** League table rows from computeStandings; shared by the member app and the public pages. */
+export function StandingsTable({ rows }: { rows: StandingsRow[] }) {
+  const { t } = useTranslation();
+  return (
+    <div className="table-wrap">
+      <table className="standings">
+        <thead>
+          <tr>
+            <th>{t('table.pos')}</th>
+            <th className="team">{t('table.team')}</th>
+            <th>{t('table.p')}</th>
+            <th className="wide">{t('table.w')}</th>
+            <th className="wide">{t('table.d')}</th>
+            <th className="wide">{t('table.l')}</th>
+            <th className="wide">{t('table.goals')}</th>
+            <th>{t('table.gd')}</th>
+            <th>{t('table.pts')}</th>
+            <th>{t('table.form')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.team_id}>
+              <td>{r.position}</td>
+              <td className="team">{r.name}</td>
+              <td>{r.played}</td>
+              <td className="wide">{r.won}</td>
+              <td className="wide">{r.drawn}</td>
+              <td className="wide">{r.lost}</td>
+              <td className="wide" dir="ltr">
+                {r.goals_for}–{r.goals_against}
+              </td>
+              <td dir="ltr">{r.goal_diff > 0 ? `+${r.goal_diff}` : r.goal_diff}</td>
+              <td className="pts">{r.points}</td>
+              <td>
+                <span className="form">
+                  {r.form.map((f, i) => (
+                    <span key={i} className={f}>
+                      {t(`table.form_letter.${f}`)}
+                    </span>
+                  ))}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
