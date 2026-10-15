@@ -1,4 +1,6 @@
-# Iqra Fotboll – administrationssystem för gräsrotsförbund (MVP)
+# Nidaamka UKCS – administrationssystem för fotbollsförbund (MVP)
+
+*Nidaamka UKCS* betyder "UKCS-systemet". UKCS står för Ururka Kubadda Cagta Soomaaliyeed, Somaliska fotbollsförbundet.
 
 En mobil-först PWA som fungerar **offline**, på somaliska, engelska och arabiska (höger-till-vänster).
 
@@ -81,7 +83,7 @@ PWA:n kräver HTTPS, utom på `localhost`. Placera servern bakom en TLS-proxy (t
 | `WEB_DIST` | (inget: servern serverar bara API:t) |
 | `PUBLIC_URL` | (inget) Appens adress, t.ex. `https://fotboll.example.org`. Behövs för länkar i e-post. |
 | `SMTP_URL` | (inget) T.ex. `smtps://användare:lösenord@smtp.example.org:465` |
-| `MAIL_FROM` | (inget) T.ex. `Iqra Fotboll <noreply@example.org>` |
+| `MAIL_FROM` | (inget) T.ex. `Nidaamka UKCS <noreply@example.org>` |
 | `TRUST_PROXY` | (av) Sätt till `1` bakom en proxy (Caddy, nginx), så att gränsen för antal försök gäller besökarens adress |
 
 **E-post:** Utan `SMTP_URL`, `MAIL_FROM` och `PUBLIC_URL` skickas ingen e-post. Inbjudningar fungerar ändå:

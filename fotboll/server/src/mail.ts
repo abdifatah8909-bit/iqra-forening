@@ -83,6 +83,6 @@ export function tokenEmail(
 ) {
   const t = TEXTS[(locale in TEXTS ? locale : 'en') as Locale][purpose];
   const fill = (s: string) =>
-    s.replace(/\{(\w+)\}/g, (_, k: string) => (k === 'app' ? 'Iqra Fotboll' : String(vars[k as keyof typeof vars] ?? '')));
+    s.replace(/\{(\w+)\}/g, (_, k: string) => (k === 'app' ? 'Nidaamka UKCS' : String(vars[k as keyof typeof vars] ?? '')));
   return { subject: fill(t.subject), text: fill(t.body) };
 }

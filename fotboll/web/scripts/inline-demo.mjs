@@ -11,8 +11,8 @@ const script = readFileSync(path.join(dist, js), 'utf8').replaceAll('</script', 
 const style = readFileSync(path.join(dist, css), 'utf8');
 
 const page = `<meta charset="utf-8">
-<title>Iqra Fotboll</title>
-<meta name="theme-color" content="#0b6e4f">
+<title>Nidaamka UKCS</title>
+<meta name="theme-color" content="#1e5aa8">
 <style>${style}</style>
 <div id="root"></div>
 <script type="module">${script}</script>

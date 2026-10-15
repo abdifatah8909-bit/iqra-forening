@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Iqra Football"
+    "name": "Nidaamka UKCS"
   },
   "nav": {
     "home": "Home",
@@ -299,8 +299,8 @@
     "set_password_myself": "Set the password myself",
     "invite_note": "The person gets a link to choose their own password. Share it by email, WhatsApp or SMS.",
     "invite": "Invite",
-    "share_invite": "Hello {{name}}! You have an account in Iqra Football. Choose your password here: {{link}}",
-    "share_reset": "Hello {{name}}! Choose a new password for Iqra Football here: {{link}}",
+    "share_invite": "Hello {{name}}! You have an account in Nidaamka UKCS. Choose your password here: {{link}}",
+    "share_reset": "Hello {{name}}! Choose a new password for Nidaamka UKCS here: {{link}}",
     "invite_ready": "Invitation for {{name}}",
     "reset_ready": "Password link for {{name}}",
     "link_emailed": "The link has been emailed. You can also send it yourself:",

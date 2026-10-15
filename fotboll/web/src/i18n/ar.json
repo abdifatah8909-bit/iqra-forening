@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "إقرأ لكرة القدم"
+    "name": "Nidaamka UKCS"
   },
   "nav": {
     "home": "الرئيسية",
@@ -307,8 +307,8 @@
     "set_password_myself": "سأضع كلمة المرور بنفسي",
     "invite_note": "سيحصل الشخص على رابط لاختيار كلمة المرور بنفسه. أرسله بالبريد الإلكتروني أو واتساب أو رسالة نصية.",
     "invite": "دعوة",
-    "share_invite": "مرحبًا {{name}}! لديك حساب في Iqra Football. اختر كلمة المرور من هنا: {{link}}",
-    "share_reset": "مرحبًا {{name}}! اختر كلمة مرور جديدة لـ Iqra Football من هنا: {{link}}",
+    "share_invite": "مرحبًا {{name}}! لديك حساب في Nidaamka UKCS. اختر كلمة المرور من هنا: {{link}}",
+    "share_reset": "مرحبًا {{name}}! اختر كلمة مرور جديدة لـ Nidaamka UKCS من هنا: {{link}}",
     "invite_ready": "دعوة {{name}}",
     "reset_ready": "رابط كلمة المرور لـ {{name}}",
     "link_emailed": "تم إرسال الرابط بالبريد الإلكتروني. يمكنك أيضًا إرساله بنفسك:",

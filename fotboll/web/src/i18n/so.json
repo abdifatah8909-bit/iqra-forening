@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Iqra Kubadda Cagta"
+    "name": "Nidaamka UKCS"
   },
   "nav": {
     "home": "Bogga hore",
@@ -299,8 +299,8 @@
     "set_password_myself": "Anigu ha dejiyo furaha sirta ah",
     "invite_note": "Qofku wuxuu helayaa xiriir uu ku doorto furihiisa sirta ah. U dir iimayl, WhatsApp ama SMS.",
     "invite": "Martiqaad",
-    "share_invite": "Salaan {{name}}! Waxaad akoon ku leedahay Iqra Football. Halkan ka dooro furahaaga sirta ah: {{link}}",
-    "share_reset": "Salaan {{name}}! Halkan ka dooro fure sir ah oo cusub oo Iqra Football ah: {{link}}",
+    "share_invite": "Salaan {{name}}! Waxaad akoon ku leedahay Nidaamka UKCS. Halkan ka dooro furahaaga sirta ah: {{link}}",
+    "share_reset": "Salaan {{name}}! Halkan ka dooro fure sir ah oo cusub oo Nidaamka UKCS ah: {{link}}",
     "invite_ready": "Martiqaadka {{name}}",
     "reset_ready": "Xiriirka furaha ee {{name}}",
     "link_emailed": "Xiriirka waa loo diray iimayl. Adiguna waad diri kartaa:",

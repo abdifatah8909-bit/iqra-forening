@@ -332,7 +332,7 @@ function LinkCard({ link, onClose }: { link: IssuedLink; onClose: () => void }) 
   const url = `${location.origin}/set-password/${link.token}`;
   const message = t(link.purpose === 'invite' ? 'admin.share_invite' : 'admin.share_reset', { name: link.name, link: url });
   return (
-    <div className="card" style={{ borderColor: 'var(--green)' }}>
+    <div className="card" style={{ borderColor: 'var(--brand)' }}>
       <h3 style={{ marginBlockEnd: 8 }}>{link.purpose === 'invite' ? t('admin.invite_ready', { name: link.name }) : t('admin.reset_ready', { name: link.name })}</h3>
       <p className="small">{link.emailed ? t('admin.link_emailed') : t('admin.link_not_emailed')}</p>
       <input readOnly value={url} dir="ltr" onFocus={(e) => e.target.select()} style={{ marginBlockEnd: 8 }} />
