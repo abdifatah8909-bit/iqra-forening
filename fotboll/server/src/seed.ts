@@ -146,6 +146,8 @@ export async function seed(db: Db) {
       for (let g = 0; g < hg; g++) upsert('match_events', { match_id: matchId, team_id: f.home_team_id, player_id: home[8 + g], type: 'goal', minute: 20 + g * 30 });
       for (let g = 0; g < ag; g++) upsert('match_events', { match_id: matchId, team_id: f.away_team_id, player_id: away[9 + g], type: 'goal', minute: 55 + g * 10 });
       upsert('match_events', { match_id: matchId, team_id: f.away_team_id, player_id: away[3], type: 'yellow', minute: 38 });
+      // A sending-off, so the demo shows a suspension for the next round.
+      if (i === 0) upsert('match_events', { match_id: matchId, team_id: f.home_team_id, player_id: home[4], type: 'red', minute: 71 });
       upsert('match_reports', { id: matchId, status: 'submitted', home_score: hg, away_score: ag });
     });
   const res = await push(db, admin, mutations);

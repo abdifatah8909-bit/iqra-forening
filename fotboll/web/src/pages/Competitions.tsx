@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
-import { computeStandings, roundRobin, type Competition, type MatchReport, type Team } from '@fotboll/shared';
-import { Empty, Field, MatchCard, Tabs, TopBar, useToast } from '../components';
+import { cardRules, computeStandings, roundRobin, type Competition, type MatchReport, type Team } from '@fotboll/shared';
+import { Empty, Field, MatchCard, StandingsTable, Tabs, TopBar, useToast } from '../components';
 import { db } from '../db';
 import { isReportLocked, useCompetitionName, useLookups, useMe } from '../hooks';
 import { save } from '../mutate';
@@ -117,6 +117,9 @@ function CompetitionForm({ seasons, onDone }: { seasons: { id: string; name: str
           points_win: Number(f.get('points_win')),
           points_draw: Number(f.get('points_draw')),
           points_loss: 0,
+          yellow_card_limit: Number(f.get('yellow_card_limit')),
+          red_card_ban: Number(f.get('red_card_ban')),
+          second_yellow_ban: Number(f.get('second_yellow_ban')),
         });
         onDone();
       }}
@@ -153,7 +156,74 @@ function CompetitionForm({ seasons, onDone }: { seasons: { id: string; name: str
           <input name="points_draw" type="number" min={0} max={10} defaultValue={1} />
         </Field>
       </div>
+      <CardRuleFields />
       <FormButtons onCancel={onDone} />
+    </form>
+  );
+}
+
+function CardRuleFields({ competition }: { competition?: Competition }) {
+  const { t } = useTranslation();
+  const rules = cardRules(competition);
+  return (
+    <>
+      <h3 style={{ marginBlock: 4 }}>{t('discipline.rules_title')}</h3>
+      <div className="grid2">
+        <Field label={t('discipline.yellow_limit')}>
+          <input name="yellow_card_limit" type="number" min={0} max={20} defaultValue={rules.yellow_card_limit} />
+        </Field>
+        <Field label={t('discipline.red_ban')}>
+          <input name="red_card_ban" type="number" min={0} max={20} defaultValue={rules.red_card_ban} />
+        </Field>
+        <Field label={t('discipline.second_yellow_ban')}>
+          <input name="second_yellow_ban" type="number" min={0} max={20} defaultValue={rules.second_yellow_ban} />
+        </Field>
+      </div>
+      <p className="muted small">{t('discipline.yellow_limit_hint')}</p>
+    </>
+  );
+}
+
+/** Points and card rules of an existing competition (federation admins). */
+function RulesForm({ competition }: { competition: Competition }) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  if (!open)
+    return (
+      <button className="secondary block" onClick={() => setOpen(true)} style={{ marginBlockEnd: 12 }}>
+        {t('competition.edit_rules')}
+      </button>
+    );
+  return (
+    <form
+      className="card"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        await save('competitions', {
+          id: competition.id,
+          points_win: Number(f.get('points_win')),
+          points_draw: Number(f.get('points_draw')),
+          yellow_card_limit: Number(f.get('yellow_card_limit')),
+          red_card_ban: Number(f.get('red_card_ban')),
+          second_yellow_ban: Number(f.get('second_yellow_ban')),
+        });
+        toast.show(t('common.saved'));
+        setOpen(false);
+      }}
+    >
+      <div className="grid2">
+        <Field label={t('competition.points_win')}>
+          <input name="points_win" type="number" min={0} max={10} defaultValue={competition.points_win} />
+        </Field>
+        <Field label={t('competition.points_draw')}>
+          <input name="points_draw" type="number" min={0} max={10} defaultValue={competition.points_draw} />
+        </Field>
+      </div>
+      <CardRuleFields competition={competition} />
+      <FormButtons onCancel={() => setOpen(false)} />
+      {toast.node}
     </form>
   );
 }
@@ -252,50 +322,7 @@ function Standings({
   if (!teams.length) return <Empty />;
   return (
     <>
-      <div className="table-wrap">
-        <table className="standings">
-          <thead>
-            <tr>
-              <th>{t('table.pos')}</th>
-              <th className="team">{t('table.team')}</th>
-              <th>{t('table.p')}</th>
-              <th className="wide">{t('table.w')}</th>
-              <th className="wide">{t('table.d')}</th>
-              <th className="wide">{t('table.l')}</th>
-              <th className="wide">{t('table.goals')}</th>
-              <th>{t('table.gd')}</th>
-              <th>{t('table.pts')}</th>
-              <th>{t('table.form')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.team_id}>
-                <td>{r.position}</td>
-                <td className="team">{r.name}</td>
-                <td>{r.played}</td>
-                <td className="wide">{r.won}</td>
-                <td className="wide">{r.drawn}</td>
-                <td className="wide">{r.lost}</td>
-                <td className="wide" dir="ltr">
-                  {r.goals_for}–{r.goals_against}
-                </td>
-                <td dir="ltr">{r.goal_diff > 0 ? `+${r.goal_diff}` : r.goal_diff}</td>
-                <td className="pts">{r.points}</td>
-                <td>
-                  <span className="form">
-                    {r.form.map((f, i) => (
-                      <span key={i} className={f}>
-                        {t(`table.form_letter.${f}`)}
-                      </span>
-                    ))}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <StandingsTable rows={rows} />
       <p className="muted small" style={{ marginBlockStart: 8 }}>
         {t('table.counted')}
       </p>
@@ -351,6 +378,7 @@ function TeamsTab({ competition, teams, hasMatches }: { competition: Competition
         </div>
       )}
       {fedAdmin && !hasMatches && teams.length >= 2 && <GenerateFixtures competitionId={competition.id} teams={teams} />}
+      {fedAdmin && <RulesForm competition={competition} />}
     </>
   );
 }

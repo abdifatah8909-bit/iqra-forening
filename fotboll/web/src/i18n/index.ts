@@ -56,3 +56,9 @@ export function formatDateTime(iso: string, opts: Intl.DateTimeFormatOptions = {
 }
 
 export default i18n;
+
+/** A calendar date (YYYY-MM-DD) without a time zone shift. */
+export function formatDate(date: string, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }) {
+  const locale = i18n.language === 'ar' ? 'ar-u-nu-latn' : i18n.language;
+  return new Intl.DateTimeFormat(locale, { ...opts, timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+}

@@ -10,6 +10,7 @@ import type { Db } from '../db.js';
  *  - players: federation admins see all; club admins their own club;
  *    referees the squads of teams in matches they are assigned to.
  *  - registrations: federation admins and the club concerned.
+ *  - suspensions: like players.
  *  - users: only id and display name.
  */
 interface Scope {
@@ -72,6 +73,14 @@ function tableQuery(table: SyncTable, ctx: UserContext, scope: Scope): { sql: st
       if (!ctx.isFedAdmin) {
         params.push(ctx.clubIds, scope.refereeTeamIds);
         where += ` and (club_id = any($2) or id in (
+          select player_id from squad_members where team_id = any($3) and deleted_at is null))`;
+      }
+      break;
+    case 'suspensions':
+      // Disciplinary data follows player visibility.
+      if (!ctx.isFedAdmin) {
+        params.push(ctx.clubIds, scope.refereeTeamIds);
+        where += ` and player_id in (select id from players where club_id = any($2) or id in (
           select player_id from squad_members where team_id = any($3) and deleted_at is null))`;
       }
       break;

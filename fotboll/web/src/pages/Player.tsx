@@ -1,14 +1,25 @@
 import { useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
-import { ageOn, isMinor, type Player } from '@fotboll/shared';
+import { ageOn, isActiveBan, isMinor, type Ban, type Player } from '@fotboll/shared';
 import { api, ApiError } from '../api';
 import { ask, Avatar, Empty, Field, PhotoPicker, TopBar, useToast } from '../components';
 import { db } from '../db';
-import { can, playerName, useCurrentSeason, useLookups, useMe, useOnline } from '../hooks';
-import { formatDateTime } from '../i18n';
-import { save } from '../mutate';
+import {
+  can,
+  isReportLocked,
+  playerName,
+  useBanLabel,
+  useBans,
+  useCompetitionName,
+  useCurrentSeason,
+  useLookups,
+  useMe,
+  useOnline,
+} from '../hooks';
+import { formatDate, formatDateTime } from '../i18n';
+import { remove, save } from '../mutate';
 import { isFedAdmin } from '../session';
 import { DEMO } from '../demo';
 
@@ -110,6 +121,8 @@ function PlayerView({ player, onEdit }: { player: Player; onEdit?: () => void })
             </div>
           ))}
         </div>
+
+        <Discipline player={player} />
 
         {isFedAdmin(me) && (
           <>
@@ -256,6 +269,205 @@ function PlayerForm({ player, clubId, onDone }: { player?: Player; clubId?: stri
       <div className="row">
         <button>{t('common.save')}</button>
         <button type="button" className="secondary" onClick={() => (player ? onDone() : navigate(-1))}>
+          {t('common.cancel')}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Cards per competition, suspensions (automatic and manual), and the federation's tools. */
+function Discipline({ player }: { player: Player }) {
+  const { t } = useTranslation();
+  const me = useMe();
+  const compName = useCompetitionName();
+  const banLabel = useBanLabel();
+  const allBans = useBans();
+  const [adding, setAdding] = useState(false);
+  const data = useLiveQuery(async () => {
+    const events = (await db.data('match_events').toArray()).filter(
+      (e) => e.player_id === player.id && (e.type === 'yellow' || e.type === 'second_yellow' || e.type === 'red'),
+    );
+    const matches = new Map((await db.data('matches').toArray()).map((m) => [m.id, m]));
+    const reportIds = [...new Set(events.map((e) => e.match_id))];
+    const reports = new Map((await db.data('match_reports').bulkGet(reportIds)).filter((r) => !!r).map((r) => [r!.id, r!]));
+    const competitions = new Map((await db.data('competitions').toArray()).map((c) => [c.id, c]));
+    // Count cards only from submitted and approved reports, like the suspensions do.
+    const perCompetition = new Map<string, { yellow: number; red: number }>();
+    for (const e of events) {
+      const m = matches.get(e.match_id);
+      if (!m || !isReportLocked(reports.get(m.id))) continue;
+      const c = perCompetition.get(m.competition_id) ?? { yellow: 0, red: 0 };
+      if (e.type === 'yellow') c.yellow++;
+      else c.red++;
+      perCompetition.set(m.competition_id, c);
+    }
+    return { perCompetition, competitions, matches };
+  }, [player.id]);
+  if (!data) return null;
+
+  const bans = allBans
+    .filter((b) => b.player_id === player.id)
+    .sort((a, b) => Number(isActiveBan(b)) - Number(isActiveBan(a)));
+  const fedAdmin = isFedAdmin(me);
+  const kickoff = (b: Ban) => (b.source_match_id ? data.matches.get(b.source_match_id)?.kickoff_at : undefined);
+
+  return (
+    <>
+      <h2>{t('discipline.title')}</h2>
+      {data.perCompetition.size > 0 && (
+        <div className="list">
+          {[...data.perCompetition].map(([competitionId, c]) => (
+            <div key={competitionId}>
+              <span className="grow">{compName(data.competitions.get(competitionId))}</span>
+              <span className="cards-count" title={t('match.event.yellow')}>
+                <span className="card-icon yellow" aria-hidden /> {c.yellow}
+              </span>
+              <span className="cards-count" title={t('match.event.red')}>
+                <span className="card-icon red" aria-hidden /> {c.red}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="list">
+        {bans.length === 0 && <div className="empty">{t('discipline.no_bans')}</div>}
+        {bans.map((b) => {
+          const when = kickoff(b);
+          return (
+            <div key={b.key}>
+              <span className="grow">
+                <div>{b.reasons.map((r) => t(`discipline.reason.${r}`)).join(' + ')}</div>
+                <div className="sub">
+                  {b.competition_id ? compName(data.competitions.get(b.competition_id)) : t('discipline.all_competitions')}
+                  {b.source_match_id && when && (
+                    <>
+                      {' · '}
+                      <Link to={`/matches/${b.source_match_id}`}>{formatDateTime(when, { dateStyle: 'medium' })}</Link>
+                    </>
+                  )}
+                  {b.ends_on && ` · ${formatDate(b.starts_on!)} – ${formatDate(b.ends_on)}`}
+                  {b.note && ` · ${b.note}`}
+                </div>
+                {b.matches !== null && (
+                  <div className="sub">{t('discipline.served', { served: b.served, total: b.matches })}</div>
+                )}
+              </span>
+              {isActiveBan(b) ? <span className="chip ban">{banLabel(b)}</span> : <span className="chip grey">{t('discipline.done')}</span>}
+              {fedAdmin && b.suspension_id && (
+                <button
+                  className="icon-btn"
+                  aria-label={t('common.delete')}
+                  onClick={async () => (await ask(t('discipline.delete_confirm'), { confirmLabel: t('common.delete'), danger: true })) && remove('suspensions', b.suspension_id!)}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <p className="muted small">{t('discipline.rules_note')}</p>
+      {fedAdmin &&
+        (adding ? (
+          <SuspensionForm player={player} onDone={() => setAdding(false)} />
+        ) : (
+          <button className="secondary block" onClick={() => setAdding(true)} style={{ marginBlockEnd: 12 }}>
+            + {t('discipline.add')}
+          </button>
+        ))}
+    </>
+  );
+}
+
+function SuspensionForm({ player, onDone }: { player: Player; onDone: () => void }) {
+  const { t } = useTranslation();
+  const compName = useCompetitionName();
+  const [kind, setKind] = useState<'matches' | 'dates'>('matches');
+  const today = new Date().toISOString().slice(0, 10);
+  // Competitions the player has a team in come first.
+  const competitions = useLiveQuery(async () => {
+    const squads = await db.data('squad_members').where('player_id').equals(player.id).toArray();
+    const teams = await db.data('teams').bulkGet(squads.map((s) => s.team_id));
+    const mine = new Set(teams.filter((x) => !!x).map((x) => x!.competition_id));
+    const all = await db.data('competitions').toArray();
+    return all.sort((a, b) => Number(mine.has(b.id)) - Number(mine.has(a.id)));
+  }, [player.id], []);
+
+  return (
+    <form
+      className="card"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        const reason = (f.get('reason') as string) || null;
+        if (kind === 'matches') {
+          await save('suspensions', {
+            player_id: player.id,
+            competition_id: f.get('competition_id') as string,
+            matches: Number(f.get('matches')),
+            starts_on: f.get('starts_on') as string,
+            ends_on: null,
+            reason,
+          });
+        } else {
+          await save('suspensions', {
+            player_id: player.id,
+            competition_id: null,
+            matches: null,
+            starts_on: f.get('starts_on') as string,
+            ends_on: f.get('ends_on') as string,
+            reason,
+          });
+        }
+        onDone();
+      }}
+    >
+      <h3 style={{ marginBlockEnd: 10 }}>{t('discipline.add')}</h3>
+      <div className="segmented">
+        <button type="button" className={kind === 'matches' ? 'active' : ''} onClick={() => setKind('matches')}>
+          {t('discipline.by_matches')}
+        </button>
+        <button type="button" className={kind === 'dates' ? 'active' : ''} onClick={() => setKind('dates')}>
+          {t('discipline.by_dates')}
+        </button>
+      </div>
+      {kind === 'matches' ? (
+        <>
+          <Field label={t('discipline.competition')}>
+            <select name="competition_id" required>
+              {competitions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {compName(c)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="grid2">
+            <Field label={t('discipline.matches')}>
+              <input name="matches" type="number" min={1} max={50} defaultValue={1} required />
+            </Field>
+            <Field label={t('discipline.from')}>
+              <input name="starts_on" type="date" defaultValue={today} required />
+            </Field>
+          </div>
+        </>
+      ) : (
+        <div className="grid2">
+          <Field label={t('discipline.from')}>
+            <input name="starts_on" type="date" defaultValue={today} required />
+          </Field>
+          <Field label={t('discipline.to')}>
+            <input name="ends_on" type="date" min={today} required />
+          </Field>
+        </div>
+      )}
+      <Field label={t('discipline.reason_label')}>
+        <input name="reason" maxLength={500} />
+      </Field>
+      <div className="row">
+        <button>{t('common.save')}</button>
+        <button type="button" className="secondary" onClick={onDone}>
           {t('common.cancel')}
         </button>
       </div>

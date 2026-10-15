@@ -7,6 +7,7 @@ import {
 } from '@fotboll/shared';
 import type { UserContext } from '../auth.js';
 import type { Tx } from '../db.js';
+import { playerBanForMatch } from './discipline.js';
 
 type Row = Record<string, any>;
 
@@ -41,13 +42,24 @@ export const INSERT_DEFAULTS: Partial<Record<WritableTable, Row>> = {
     license_no: null,
   },
   registrations: { status: 'pending', note: null },
-  competitions: { points_win: 3, points_draw: 1, points_loss: 0, gender: 'male', age_group: null, name_i18n: null },
+  competitions: {
+    points_win: 3,
+    points_draw: 1,
+    points_loss: 0,
+    gender: 'male',
+    age_group: null,
+    name_i18n: null,
+    yellow_card_limit: 3,
+    red_card_ban: 1,
+    second_yellow_ban: 1,
+  },
   squad_members: { shirt_number: null, position: null },
   venues: { address: null, lat: null, lng: null },
   matches: { status: 'scheduled', venue_id: null, referee_user_id: null },
   match_reports: { status: 'draft', home_score: 0, away_score: 0, notes: null },
   match_lineups: { is_starter: true, is_captain: false, is_goalkeeper: false, shirt_number: null },
   match_events: { player_id: null, related_player_id: null, added_time: null },
+  suspensions: { competition_id: null, matches: null, ends_on: null, reason: null },
 };
 
 /**
@@ -71,6 +83,7 @@ export const REFERENCES: Partial<Record<WritableTable, Record<string, string>>> 
   match_reports: { id: 'matches' },
   match_lineups: { match_id: 'matches', team_id: 'teams', player_id: 'players' },
   match_events: { match_id: 'matches', team_id: 'teams', player_id: 'players', related_player_id: 'players' },
+  suspensions: { player_id: 'players', competition_id: 'competitions' },
 };
 
 const FORBIDDEN = 'forbidden';
@@ -202,7 +215,7 @@ export const RULES: Record<WritableTable, TableRules> = {
   },
 
   match_lineups: {
-    async check({ tx, ctx, after }) {
+    async check({ tx, ctx, op, before, after }) {
       const { match, reportStatus } = await matchInfo(tx, after.match_id);
       if (after.team_id !== match.home_team_id && after.team_id !== match.away_team_id) {
         return 'team_not_in_match';
@@ -218,7 +231,24 @@ export const RULES: Record<WritableTable, TableRules> = {
         'select 1 from squad_members where team_id = $1 and player_id = $2 and deleted_at is null',
         [after.team_id, after.player_id],
       );
-      return inSquad ? null : 'player_not_in_squad';
+      if (!inSquad) return 'player_not_in_squad';
+      // A suspended player cannot be picked. Rows added before the ban was known
+      // may still be edited, and the federation can override.
+      if (!ctx.isFedAdmin && (op === 'insert' || before!.player_id !== after.player_id)) {
+        if (await playerBanForMatch(tx, after.player_id, after.match_id)) return 'player_suspended';
+      }
+      return null;
+    },
+  },
+
+  suspensions: {
+    async check({ ctx, op, after }) {
+      if (!ctx.isFedAdmin) return FORBIDDEN;
+      if (op === 'delete') return null;
+      // Either N matches in one competition, or a date range.
+      const byMatches = after.matches != null && after.competition_id != null && after.ends_on == null;
+      const byDates = after.matches == null && after.ends_on != null && after.ends_on >= after.starts_on;
+      return byMatches || byDates ? null : 'invalid';
     },
   },
 

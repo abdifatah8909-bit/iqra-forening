@@ -153,12 +153,15 @@ export class SyncEngine {
     let scope = await db.getMeta<string>('scope');
     for (;;) {
       const res = await this.transport.pull(cursor, scope);
+      const known = new Set(db.tables.map((t) => t.name));
       await db.transaction('rw', [...dataTables(), db.outbox, db.meta], async () => {
         if (res.reset) {
           // Visibility changed: start from a clean copy, keeping unsynced edits.
           for (const t of dataTables()) await t.clear();
         }
         for (const [table, rows] of Object.entries(res.changes) as [SyncTable, Row[]][]) {
+          // A newer server may send tables this version of the app does not know yet.
+          if (!known.has(table)) continue;
           for (const row of rows) await applyServerRow(table, row);
         }
         if (res.reset) await replayOutbox();

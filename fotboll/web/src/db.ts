@@ -63,6 +63,7 @@ export class LocalDb extends Dexie {
       sync_errors: '++id',
       meta: 'key',
     });
+    this.version(2).stores({ suspensions: 'id, player_id' });
   }
 
   data<K extends SyncTable>(table: K): DataTables[K] {

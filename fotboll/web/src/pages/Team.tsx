@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { SquadMember } from '@fotboll/shared';
 import { Avatar, Empty, TopBar } from '../components';
 import { db } from '../db';
-import { can, playerName, useCompetitionName, useLookups, useMe } from '../hooks';
+import { activeBansFor, can, playerName, useBanLabel, useBans, useCompetitionName, useLookups, useMe } from '../hooks';
 import { remove, save } from '../mutate';
 
 const POSITIONS = ['GK', 'DF', 'MF', 'FW'] as const;
@@ -18,6 +18,8 @@ export function TeamPage() {
   const { players, clubs } = useLookups();
   const compName = useCompetitionName();
   const [adding, setAdding] = useState(false);
+  const bans = useBans();
+  const banLabel = useBanLabel();
 
   const data = useLiveQuery(async () => {
     const team = await db.data('teams').get(id);
@@ -71,7 +73,14 @@ export function TeamPage() {
                   <span className="minute">{s.shirt_number ?? ''}</span>
                 )}
                 <Avatar mediaId={p?.photo_media_id} name={playerName(p) || '?'} />
-                <span className="grow ellipsis">{p ? <Link to={`/players/${p.id}`}>{playerName(p)}</Link> : t('match.unknown_player')}</span>
+                <span className="grow" style={{ minInlineSize: 0 }}>
+                  <div className="ellipsis">{p ? <Link to={`/players/${p.id}`}>{playerName(p)}</Link> : t('match.unknown_player')}</div>
+                  {activeBansFor(bans, s.player_id, team.id).map((b) => (
+                    <span key={b.key} className="chip ban">
+                      {banLabel(b)}
+                    </span>
+                  ))}
+                </span>
                 {editable ? (
                   <>
                     <select

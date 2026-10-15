@@ -2,7 +2,11 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useSyncExternalStore, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  computeBans,
+  isActiveBan,
   LOCKED_REPORT_STATUSES,
+  remainingMatches,
+  type Ban,
   type Club,
   type Competition,
   type Match,
@@ -11,6 +15,7 @@ import {
   type Team,
 } from '@fotboll/shared';
 import { db } from './db';
+import { formatDate } from './i18n';
 import { adminClubIds, isFedAdmin, useSession, type Me } from './session';
 import { syncEngine } from './sync';
 
@@ -100,4 +105,44 @@ export function useCurrentSeason() {
     const today = new Date().toISOString().slice(0, 10);
     return seasons.find((s) => s.starts_on <= today && today <= s.ends_on) ?? seasons[0];
   }, []);
+}
+
+/**
+ * Every suspension the device knows about, derived from submitted reports and
+ * manual suspensions (see shared/src/discipline.ts). Works offline.
+ */
+export function useBans(): Ban[] {
+  return useLiveQuery(
+    async () => {
+      const [competitions, teams, matches, reports, events, suspensions, squads] = await Promise.all([
+        db.data('competitions').toArray(),
+        db.data('teams').toArray(),
+        db.data('matches').toArray(),
+        db.data('match_reports').toArray(),
+        db.data('match_events').toArray(),
+        db.data('suspensions').toArray(),
+        db.data('squad_members').toArray(),
+      ]);
+      const counted = new Set(reports.filter((r) => isReportLocked(r)).map((r) => r.id));
+      return computeBans({ competitions, teams, matches, counted, events, suspensions, squads });
+    },
+    [],
+    [] as Ban[],
+  );
+}
+
+/** Active bans for one player that matter for a team (its competition), or everywhere. */
+export function activeBansFor(bans: Ban[], playerId: string, teamId?: string) {
+  return bans.filter(
+    (b) => b.player_id === playerId && isActiveBan(b) && (!teamId || b.team_id === teamId || b.ends_on !== null),
+  );
+}
+
+/** Short label such as "Suspended · 1 match left" or "Suspended until 3 Jun". */
+export function useBanLabel() {
+  const { t } = useTranslation();
+  return (b: Ban) =>
+    b.ends_on
+      ? t('discipline.banned_until', { date: formatDate(b.ends_on) })
+      : t('discipline.banned_matches', { count: remainingMatches(b) });
 }

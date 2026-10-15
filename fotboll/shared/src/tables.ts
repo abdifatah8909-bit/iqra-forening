@@ -98,6 +98,11 @@ export const schemas = {
     points_win: z.number().int().min(0).max(10),
     points_draw: z.number().int().min(0).max(10),
     points_loss: z.number().int().min(0).max(10),
+    /** Yellow cards that give a one-match ban (0 = no accumulation). */
+    yellow_card_limit: z.number().int().min(0).max(20),
+    /** Matches banned for a red card / for a second yellow in one match. */
+    red_card_ban: z.number().int().min(0).max(20),
+    second_yellow_ban: z.number().int().min(0).max(20),
   }),
   teams: z.object({
     id: uuid,
@@ -159,6 +164,20 @@ export const schemas = {
     minute: z.number().int().min(0).max(130),
     added_time: z.number().int().min(0).max(30).nullable().optional(),
   }),
+  /**
+   * Manual suspension decided by the federation, either a number of matches
+   * in one competition (from `starts_on`) or every match in a date range.
+   * Automatic bans from cards are derived, not stored (see discipline.ts).
+   */
+  suspensions: z.object({
+    id: uuid,
+    player_id: uuid,
+    competition_id: optUuid,
+    matches: z.number().int().min(1).max(50).nullable().optional(),
+    starts_on: isoDate,
+    ends_on: isoDate.nullable().optional(),
+    reason: optText(500),
+  }),
 } as const;
 
 export type WritableTable = keyof typeof schemas;
@@ -212,6 +231,7 @@ export type MatchReport = Inferred<'match_reports'> &
   };
 export type MatchLineup = Inferred<'match_lineups'> & SyncMeta;
 export type MatchEvent = Inferred<'match_events'> & SyncMeta & { recorded_by: string | null };
+export type Suspension = Inferred<'suspensions'> & SyncMeta;
 export type UserProfile = { id: string; display_name: string; is_referee: boolean } & SyncMeta;
 
 export interface RowTypes {
@@ -229,6 +249,7 @@ export interface RowTypes {
   match_reports: MatchReport;
   match_lineups: MatchLineup;
   match_events: MatchEvent;
+  suspensions: Suspension;
   user_profiles: UserProfile;
 }
 

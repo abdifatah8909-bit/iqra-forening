@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import {
+  banFor,
   EVENT_TYPES,
   MATCH_STATUSES,
   scoreFromEvents,
@@ -12,11 +13,12 @@ import {
   type MatchLineup,
   type MatchReport,
   type Player,
+  type Ban,
   type Team,
 } from '@fotboll/shared';
 import { ask, Empty, Field, ReportChip, Tabs, TopBar, useToast } from '../components';
 import { db } from '../db';
-import { can, isReportLocked, playerName, useCompetitionName, useLookups, useMe } from '../hooks';
+import { can, isReportLocked, playerName, useBanLabel, useBans, useCompetitionName, useLookups, useMe } from '../hooks';
 import { formatDateTime } from '../i18n';
 import { remove, save } from '../mutate';
 import { isFedAdmin } from '../session';
@@ -41,6 +43,7 @@ export function MatchPage() {
     return { match, report, lineups, events, competition, venue };
   }, [id]);
 
+  const bans = useBans();
   const editEvents = data ? can.editEvents(me, data.match, data.report) : false;
   const [tab, setTab] = useState<'events' | 'lineups'>('events');
 
@@ -111,6 +114,7 @@ export function MatchPage() {
                     match={match}
                     lineups={lineups.filter((l) => l.team_id === team.id)}
                     editable={can.editLineup(me, match, team, report)}
+                    bans={bans}
                   />
                 ),
             )}
@@ -253,9 +257,25 @@ function EventForm({ match, home, away, lineups }: { match: Match; home?: Team; 
   );
 }
 
-function LineupSection({ team, match, lineups, editable }: { team: Team; match: Match; lineups: MatchLineup[]; editable: boolean }) {
+function LineupSection({
+  team,
+  match,
+  lineups,
+  editable,
+  bans,
+}: {
+  team: Team;
+  match: Match;
+  lineups: MatchLineup[];
+  editable: boolean;
+  bans: Ban[];
+}) {
   const { t } = useTranslation();
+  const me = useMe();
   const { players } = useLookups();
+  const banLabel = useBanLabel();
+  // Suspended players cannot be picked; the federation may override (the server agrees).
+  const canOverride = isFedAdmin(me);
   const [picking, setPicking] = useState(false);
   const squad = useLiveQuery(() => db.data('squad_members').where('team_id').equals(team.id).toArray(), [team.id], []);
   const inLineup = new Set(lineups.map((l) => l.player_id));
@@ -281,6 +301,7 @@ function LineupSection({ team, match, lineups, editable }: { team: Team; match: 
               <span className="grow">
                 <div className="ellipsis">{playerName(p) || t('match.unknown_player')}</div>
                 <div className="row">
+                  {banFor(bans, l.player_id, match) && <span className="chip ban">{t('discipline.suspended')}</span>}
                   <span className={`chip ${l.is_starter ? '' : 'grey'}`}>{l.is_starter ? t('match.starter') : t('match.bench')}</span>
                   {l.is_captain && <span className="chip">{t('match.captain')}</span>}
                   {l.is_goalkeeper && <span className="chip">{t('match.goalkeeper')}</span>}
@@ -317,10 +338,13 @@ function LineupSection({ team, match, lineups, editable }: { team: Team; match: 
               {squad
                 .filter((s) => !inLineup.has(s.player_id))
                 .sort((a, b) => (a.shirt_number ?? 99) - (b.shirt_number ?? 99))
-                .map((s) => (
-                  <label key={s.id} className="check" style={{ marginBlockEnd: 0 }}>
+                .map((s) => {
+                  const ban = banFor(bans, s.player_id, match);
+                  return (
+                  <label key={s.id} className="check" style={{ marginBlockEnd: 0, opacity: ban && !canOverride ? 0.6 : 1 }}>
                     <input
                       type="checkbox"
+                      disabled={!!ban && !canOverride}
                       onChange={() =>
                         save('match_lineups', {
                           match_id: match.id,
@@ -335,8 +359,10 @@ function LineupSection({ team, match, lineups, editable }: { team: Team; match: 
                     />
                     <span className="minute">{s.shirt_number ?? ''}</span>
                     <span className="grow">{playerName(players.get(s.player_id) as Player | undefined) || t('match.unknown_player')}</span>
+                    {ban && <span className="chip ban">{banLabel(ban)}</span>}
                   </label>
-                ))}
+                  );
+                })}
             </div>
           )}
         </>
