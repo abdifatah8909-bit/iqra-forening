@@ -1,4 +1,3 @@
-import i18n from './i18n';
 import {
   LOCALES,
   LOCKED_REPORT_STATUSES,
@@ -44,7 +43,8 @@ async function loadSnapshot() {
 export async function demoLogin(key: DemoKey) {
   const s = await loadSnapshot();
   // Roles have different saved languages; in the demo the one on screen applies to all of them.
-  const locale = (LOCALES as readonly string[]).includes(i18n.language) ? (i18n.language as Locale) : s.accounts[key].locale;
+  const onScreen = document.documentElement.lang;
+  const locale = (LOCALES as readonly string[]).includes(onScreen) ? (onScreen as Locale) : s.accounts[key].locale;
   await startSession(`demo-${key}`, { ...s.accounts[key], locale }, { keepData: true });
 }
 

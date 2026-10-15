@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { Locale, Role } from '@fotboll/shared';
 import { api, setToken, setUnauthorizedHandler } from './api';
 import { db } from './db';
-import { chosenLanguage } from './i18n';
+import { chosenLanguage } from './i18n/chosen';
 
 export interface Me {
   id: string;

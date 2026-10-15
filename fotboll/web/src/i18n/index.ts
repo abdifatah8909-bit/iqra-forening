@@ -4,6 +4,9 @@ import { LOCALES, type Locale } from '@fotboll/shared';
 import en from './en.json';
 import so from './so.json';
 import ar from './ar.json';
+import { rememberChosenLanguage } from './chosen';
+
+export { chosenLanguage } from './chosen';
 
 export const LANGUAGE_NAMES: Record<Locale, string> = {
   so: 'Soomaali',
@@ -37,8 +40,6 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
-const CHOSEN_KEY = 'locale_chosen';
-
 /**
  * A language the person picked themselves before signing in (login screen,
  * public pages). It wins over the language saved on their account, which is
@@ -46,22 +47,7 @@ const CHOSEN_KEY = 'locale_chosen';
  */
 export function chooseLanguage(locale: Locale) {
   setLanguage(locale);
-  try {
-    localStorage.setItem(CHOSEN_KEY, locale);
-  } catch {
-    // Private mode: the choice still applies until the page is closed.
-  }
-}
-
-/** The language picked before signing in, if any; `consume` forgets it once applied to the account. */
-export function chosenLanguage({ consume = false } = {}): Locale | null {
-  try {
-    const value = localStorage.getItem(CHOSEN_KEY);
-    if (consume) localStorage.removeItem(CHOSEN_KEY);
-    return value && (LOCALES as readonly string[]).includes(value) ? (value as Locale) : null;
-  } catch {
-    return null;
-  }
+  rememberChosenLanguage(locale);
 }
 
 let initial: Locale = detect();
