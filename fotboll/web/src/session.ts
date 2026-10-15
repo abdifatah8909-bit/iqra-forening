@@ -59,6 +59,16 @@ export async function login(email: string, password: string) {
   return res.user;
 }
 
+/** Uses an invitation or reset link: the server sets the password and signs the user in. */
+export async function setPasswordWithLink(linkToken: string, password: string) {
+  const res = await api<{ token: string; user: Me }>('/auth/set-password', {
+    method: 'POST',
+    json: { token: linkToken, password },
+  });
+  await startSession(res.token, res.user);
+  return res.user;
+}
+
 export async function startSession(token: string, me: Me, opts: { keepData?: boolean } = {}) {
   const previous = await db.getMeta<Me>('me');
   // A different person on the same phone must not see the previous user's data.
@@ -77,8 +87,8 @@ export async function updateMe(patch: Partial<Pick<Me, 'locale' | 'display_name'
   const me = { ...state.me, ...patch };
   await db.setMeta('me', me);
   set({ me });
-  // Best effort: the preference also applies offline.
-  api('/me', { method: 'PATCH', json: patch }).catch(() => {});
+  // Best effort: the preference also applies offline. The demo has no server.
+  if (!(await db.getMeta<string>('token'))?.startsWith('demo-')) api('/me', { method: 'PATCH', json: patch }).catch(() => {});
 }
 
 async function wipeLocalData() {

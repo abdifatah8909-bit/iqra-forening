@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { LOCALES } from '@fotboll/shared';
-import { ApiError } from '../api';
+import { api, ApiError } from '../api';
 import { Field } from '../components';
 import { LANGUAGE_NAMES, setLanguage } from '../i18n';
 import { login } from '../session';
@@ -14,6 +15,7 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   return (
     <div className="login">
@@ -48,6 +50,8 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
             ))}
           </div>
         </div>
+      ) : forgot ? (
+        <ForgotPassword email={email} onBack={() => setForgot(false)} />
       ) : (
       <form
         className="card"
@@ -75,9 +79,62 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
         <button className="block" disabled={busy}>
           {t('auth.submit')}
         </button>
+        <button type="button" className="secondary block" style={{ marginBlockStart: 8, border: 0 }} onClick={() => setForgot(true)}>
+          {t('auth.forgot')}
+        </button>
       </form>
       )}
       <p className="muted small center">{DEMO ? t('demo.note') : t('auth.first_login_online')}</p>
+      <p className="center">
+        <Link to="/public">{t('public.link')} ›</Link>
+      </p>
     </div>
+  );
+}
+
+/** Asks for a reset link by email. The answer is the same whether or not the address exists. */
+function ForgotPassword({ email: initial, onBack }: { email: string; onBack: () => void }) {
+  const { t } = useTranslation();
+  const [email, setEmail] = useState(initial);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <form
+      className="card"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setBusy(true);
+        setError(null);
+        try {
+          await api('/auth/forgot', { method: 'POST', json: { email } });
+          setSent(true);
+        } catch (err) {
+          setError(err instanceof ApiError ? err.code : 'unknown');
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <h2 style={{ marginBlockStart: 0 }}>{t('auth.forgot_title')}</h2>
+      {sent ? (
+        <p className="notice">{t('auth.forgot_sent')}</p>
+      ) : (
+        <>
+          <p className="muted small">{t('auth.forgot_intro')}</p>
+          <Field label={t('auth.email')}>
+            <input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
+          </Field>
+          {error && <p className="error-text">{t(`errors.${error}`, { defaultValue: t('errors.unknown') })}</p>}
+          <button className="block" disabled={busy}>
+            {t('auth.send_link')}
+          </button>
+        </>
+      )}
+      <button type="button" className="secondary block" style={{ marginBlockStart: 8 }} onClick={onBack}>
+        {t('auth.to_login')}
+      </button>
+    </form>
   );
 }

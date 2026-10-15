@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { LOCALES, ROLES } from '@fotboll/shared';
 import { hashPassword } from './auth.js';
 import { withWriteLock, type Db, type Tx } from './db.js';
+import type { Mailer } from './mail.js';
 import { removeMediaFile } from './media.js';
+import { createAuthToken, emailToken, NO_PASSWORD } from './tokens.js';
 
 /**
  * Account management and GDPR erasure. These need the server (passwords,
@@ -15,7 +17,8 @@ const roleSchema = z.object({ role: z.enum(ROLES), club_id: z.string().uuid().nu
 const createUserSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   display_name: z.string().trim().min(1).max(120),
-  password: z.string().min(8).max(200),
+  /** Leave out to send an invitation link instead; the user then chooses a password. */
+  password: z.string().min(8).max(200).optional(),
   locale: z.enum(LOCALES).default('so'),
   roles: z.array(roleSchema).min(1),
 });
@@ -56,7 +59,23 @@ async function setRoles(tx: Tx, federationId: string, userId: string, roles: z.i
 
 class BadRequest extends Error {}
 
-export function registerAdminRoutes(app: FastifyInstance, db: Db, mediaDir: string) {
+export function registerAdminRoutes(
+  app: FastifyInstance,
+  db: Db,
+  mediaDir: string,
+  mail: { mailer: Mailer; publicUrl?: string },
+) {
+  /**
+   * New one-time link for a user: an invitation until they have chosen a
+   * password, a reset link after that. The token goes back to the admin so
+   * the link can also be shared by WhatsApp or SMS.
+   */
+  async function issueLink(tx: Tx, userId: string, createdBy: string) {
+    const user = (await tx.query('select password_hash from users where id = $1', [userId])).rows[0];
+    const purpose = user.password_hash === NO_PASSWORD ? ('invite' as const) : ('reset' as const);
+    return { purpose, token: await createAuthToken(tx, userId, purpose, createdBy) };
+  }
+
   app.register(async (admin) => {
     admin.addHook('preHandler', requireFedAdmin);
     admin.setErrorHandler((err, _req, reply) => {
@@ -68,7 +87,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, mediaDir: stri
 
     admin.get('/api/admin/users', async (req) => {
       const users = await db.query(
-        `select u.id, u.email, u.display_name, u.locale, u.is_active,
+        `select u.id, u.email, u.display_name, u.locale, u.is_active, u.password_hash = '${NO_PASSWORD}' as invited,
                 coalesce(json_agg(json_build_object('role', r.role, 'club_id', r.club_id))
                   filter (where r.role is not null), '[]') as roles
          from users u left join role_assignments r on r.user_id = u.id
@@ -82,16 +101,40 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, mediaDir: stri
     admin.post('/api/admin/users', async (req, reply) => {
       const body = createUserSchema.parse(req.body);
       const id = randomUUID();
-      const passwordHash = await hashPassword(body.password);
-      await withWriteLock(db, async (tx) => {
+      const passwordHash = body.password ? await hashPassword(body.password) : NO_PASSWORD;
+      const link = await withWriteLock(db, async (tx) => {
         await tx.query(
           `insert into users (id, federation_id, email, password_hash, display_name, locale)
            values ($1, $2, $3, $4, $5, $6)`,
           [id, req.user.federationId, body.email, passwordHash, body.display_name, body.locale],
         );
         await setRoles(tx, req.user.federationId, id, body.roles);
+        return body.password ? null : issueLink(tx, id, req.user.userId);
       });
-      return reply.code(201).send({ id });
+      if (!link) return reply.code(201).send({ id });
+      const emailed = await emailToken(db, mail.mailer, mail.publicUrl, id, link.purpose, link.token).catch((err) => {
+        req.log.error(err);
+        return false;
+      });
+      return reply.code(201).send({ id, link: { ...link, emailed } });
+    });
+
+    /** A fresh invitation or password-reset link for an existing user. */
+    admin.post('/api/admin/users/:id/link', async (req, reply) => {
+      const { id } = idParams.parse(req.params);
+      const link = await withWriteLock(db, async (tx) => {
+        const user = await tx.query(
+          'select 1 from users where id = $1 and federation_id = $2 and is_active and deleted_at is null for update',
+          [id, req.user.federationId],
+        );
+        return user.rowCount ? issueLink(tx, id, req.user.userId) : null;
+      });
+      if (!link) return reply.code(404).send({ error: 'not_found' });
+      const emailed = await emailToken(db, mail.mailer, mail.publicUrl, id, link.purpose, link.token).catch((err) => {
+        req.log.error(err);
+        return false;
+      });
+      return { ...link, emailed };
     });
 
     admin.patch('/api/admin/users/:id', async (req, reply) => {
