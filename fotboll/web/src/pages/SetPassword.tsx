@@ -6,7 +6,7 @@ import { api, ApiError } from '../api';
 import { Field } from '../components';
 import { chooseLanguage, chosenLanguage, LANGUAGE_NAMES, setLanguage } from '../i18n';
 import { setPasswordWithLink } from '../session';
-import icon from '../icon.svg';
+import emblem from '../emblem.svg';
 
 interface LinkInfo {
   purpose: 'invite' | 'reset';
@@ -40,7 +40,7 @@ export function SetPasswordPage() {
 
   return (
     <div className="login">
-      <img className="logo" src={icon} alt="" />
+      <img className="logo" src={emblem} alt="" />
       <h1 className="center" style={{ marginBlockEnd: 16 }}>
         {t('app.name')}
       </h1>

@@ -6,7 +6,7 @@ import { api, ApiError } from '../api';
 import { Empty, StandingsTable, Tabs } from '../components';
 import { DEMO, demoPublicData } from '../demo';
 import { chooseLanguage, formatDateTime, LANGUAGE_NAMES } from '../i18n';
-import icon from '../icon.svg';
+import emblem from '../emblem.svg';
 
 /**
  * Public pages for supporters and parents: fixtures, results, league tables
@@ -124,7 +124,7 @@ function PublicHeader({ title }: { title: string }) {
   const { t, i18n } = useTranslation();
   return (
     <header className="topbar public-top">
-      <img src={icon} alt="" className="public-logo" />
+      <img src={emblem} alt="" className="public-logo" />
       <h1>{title}</h1>
       <select
         aria-label={t('settings.language')}

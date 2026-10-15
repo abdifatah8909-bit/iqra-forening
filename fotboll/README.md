@@ -2,6 +2,13 @@
 
 *Nidaamka UKCS* betyder "UKCS-systemet". UKCS står för Ururka Kubadda Cagta Soomaaliyeed, Somaliska fotbollsförbundet.
 
+**Logotyp:** `web/src/emblem.svg` bygger på Somalias riksvapen, med fotbollar i stället för spjuten.
+Den visas på inloggningssidan och på den publika sidan. Appikonen (`web/public/icon*`) är en
+förenklad variant med stjärnan, eftersom vapnet inte går att läsa i så liten storlek. Vektorfilen
+kommer från npm-paketet `coat-of-arms` (en kopia av Wikimedia Commons fil *Coat of arms of Somalia.svg*).
+Ett riksvapen är ofta skyddat i lag. Därför bör förbundet godkänna att vapnet används innan
+plattformen lanseras.
+
 En mobil-först PWA som fungerar **offline**, på somaliska, engelska och arabiska (höger-till-vänster).
 
 **Funktioner**

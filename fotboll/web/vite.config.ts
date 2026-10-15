@@ -9,7 +9,8 @@ export default defineConfig(({ mode }) => ({
         base: './',
         build: {
           outDir: 'dist-demo',
-          assetsInlineLimit: 100_000,
+          // Large enough for the emblem, so the demo stays one file.
+          assetsInlineLimit: 250_000,
           cssCodeSplit: false,
           rollupOptions: { output: { inlineDynamicImports: true } },
         },

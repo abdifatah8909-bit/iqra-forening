@@ -7,7 +7,7 @@ import { Field } from '../components';
 import { chooseLanguage, LANGUAGE_NAMES } from '../i18n';
 import { login } from '../session';
 import { DEMO, DEMO_ACCOUNTS, demoLogin } from '../demo';
-import icon from '../icon.svg';
+import emblem from '../emblem.svg';
 
 export function LoginPage({ notice, email: initialEmail = '' }: { notice?: string; email?: string }) {
   const { t, i18n } = useTranslation();
@@ -19,7 +19,7 @@ export function LoginPage({ notice, email: initialEmail = '' }: { notice?: strin
 
   return (
     <div className="login">
-      <img className="logo" src={icon} alt="" />
+      <img className="logo" src={emblem} alt="" />
       <h1 className="center" style={{ marginBlockEnd: 16 }}>
         {t('app.name')}
       </h1>
