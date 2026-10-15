@@ -73,11 +73,34 @@ function shiftDates(pull: PullResponse): PullResponse {
 
 let seq = Date.now();
 
+/**
+ * Identifies the example data built into this demo. A browser that kept data
+ * from an older demo (another seed) starts over from the new data instead.
+ */
+function demoVersion(s: Snapshot) {
+  return `demo:${(s.pull.changes.federations?.[0]?.id as string | undefined) ?? ''}:${s.pull.cursor}`;
+}
+
+/** Drops what was done in an older demo and signs the same role in again with the new data. */
+async function startOver(s: Snapshot) {
+  await db.outbox.clear();
+  await db.sync_errors.clear();
+  const token = await db.getMeta<string>('token');
+  const key = token?.slice('demo-'.length) as DemoKey | undefined;
+  const me = await db.getMeta<Me>('me');
+  if (token && key && s.accounts[key]) {
+    await startSession(token, { ...s.accounts[key], locale: me?.locale ?? s.accounts[key].locale }, { keepData: true });
+  }
+}
+
 export const demoTransport: Transport = {
   async pull(since, scope) {
-    if (scope === 'demo') return { cursor: since, scope: 'demo', reset: false, has_more: false, changes: {} };
-    const pull = shiftDates((await loadSnapshot()).pull);
-    return { ...pull, scope: 'demo', reset: true, has_more: false };
+    const s = await loadSnapshot();
+    const version = demoVersion(s);
+    if (scope === version) return { cursor: since, scope: version, reset: false, has_more: false, changes: {} };
+    if (scope) await startOver(s);
+    const pull = shiftDates(s.pull);
+    return { ...pull, scope: version, reset: true, has_more: false };
   },
 
   async push(mutations) {
@@ -130,13 +153,15 @@ export const demoTransport: Transport = {
 export async function demoPublicData(): Promise<PublicData> {
   type Rows = Record<string, Record<string, unknown>[]>;
   let src: Rows;
-  if (await db.data('federations').count()) {
+  const s = await loadSnapshot();
+  // This browser's copy, unless it is from an older demo or nobody has signed in yet.
+  if ((await db.getMeta<string>('scope')) === demoVersion(s) && (await db.data('federations').count())) {
     const tables = ['federations', 'seasons', 'competitions', 'clubs', 'teams', 'venues', 'matches', 'match_reports'] as const;
     src = Object.fromEntries(
       await Promise.all(tables.map(async (t) => [t, (await db.data(t).toArray()) as unknown as Record<string, unknown>[]])),
     );
   } else {
-    src = shiftDates((await loadSnapshot()).pull).changes as Rows;
+    src = shiftDates(s.pull).changes as Rows;
   }
   const live = (t: string) => (src[t] ?? []).filter((r) => !r.deleted_at);
   const f = live('federations')[0];
