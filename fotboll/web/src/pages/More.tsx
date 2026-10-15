@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { LOCALES } from '@fotboll/shared';
@@ -14,6 +14,7 @@ export function MorePage() {
   const { t, i18n } = useTranslation();
   const me = useMe();
   const sync = useSyncState();
+  const navigate = useNavigate();
   const errors = useLiveQuery(() => db.sync_errors.reverse().toArray(), [], []);
   const [persisted, setPersisted] = useState<boolean | null>(null);
   useEffect(() => {
@@ -128,6 +129,8 @@ export function MorePage() {
             className="danger"
             onClick={async () => {
               if (sync.pending && !(await ask(t('auth.logout_pending', { count: sync.pending }), { confirmLabel: t('auth.logout'), danger: true }))) return;
+              // The next person to sign in starts on the home page.
+              navigate('/', { replace: true });
               void logout();
             }}
           >

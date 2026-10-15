@@ -56,7 +56,11 @@ async function replayOutbox() {
   }
 }
 
-const dataTables = () => SYNC_TABLES.map((t) => db.table(t));
+// Only tables this version of the app has; a newer server may sync more.
+const dataTables = () => {
+  const local = new Set(db.tables.map((t) => t.name));
+  return SYNC_TABLES.filter((t) => local.has(t)).map((t) => db.table(t));
+};
 
 export class SyncEngine {
   state: SyncState = { status: 'idle', lastSyncAt: null, error: null };

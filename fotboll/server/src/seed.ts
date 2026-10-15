@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { roundRobin, uuidv7, type Mutation, type WritableTable } from '@fotboll/shared';
+import { roundRobin, teamSheetId, uuidv7, type Mutation, type WritableTable } from '@fotboll/shared';
 import { hashPassword, loadUserContext } from './auth.js';
 import { config } from './config.js';
 import { createPool, withWriteLock, type Db } from './db.js';
@@ -150,6 +150,24 @@ export async function seed(db: Db) {
       if (i === 0) upsert('match_events', { match_id: matchId, team_id: f.home_team_id, player_id: home[4], type: 'red', minute: 71 });
       upsert('match_reports', { id: matchId, status: 'submitted', home_score: hg, away_score: ag });
     });
+  // Iqra IF has submitted its team sheet for round 2; the opponent has not yet.
+  // The player sent off in round 1 is suspended, so he is left out.
+  const r2 = fixtures.findIndex((f) => f.round === 2 && (f.home_team_id === teamIds[0] || f.away_team_id === teamIds[0]));
+  const iqraSuspended = fixtures[0].home_team_id === teamIds[0] ? squads[0][4] : null;
+  const sheetPlayers = squads[0].filter((id) => id !== iqraSuspended).slice(0, 12);
+  sheetPlayers.forEach((playerId, n) =>
+    upsert('match_lineups', {
+      match_id: matchIds[r2],
+      team_id: teamIds[0],
+      player_id: playerId,
+      shirt_number: squads[0].indexOf(playerId) + 1,
+      is_starter: n < 11,
+      is_goalkeeper: n === 0,
+      is_captain: n === 5,
+    }),
+  );
+  upsert('team_sheets', { id: teamSheetId(matchIds[r2], teamIds[0]), match_id: matchIds[r2], team_id: teamIds[0], status: 'submitted' });
+
   // An open transfer for the demo: Hiiraan FC wants a player from Iqra IF, who must release him first.
   upsert('transfers', {
     player_id: squads[0][13],

@@ -23,8 +23,15 @@ export function HomePage() {
     const now = new Date().toISOString();
     const relevant = (m: (typeof matches)[number]) =>
       fedAdmin || m.referee_user_id === me.id || myTeamIds.has(m.home_team_id) || myTeamIds.has(m.away_team_id);
+    const submittedSheets = new Set(
+      (await db.data('team_sheets').toArray())
+        .filter((x) => x.status === 'submitted' && !x.deleted_at)
+        .map((x) => `${x.match_id}|${x.team_id}`),
+    );
     return {
       reports,
+      myTeamIds,
+      submittedSheets,
       // Referee: assigned matches without a submitted report, oldest first.
       refereeDue: matches
         .filter((m) => m.referee_user_id === me.id && m.status !== 'cancelled' && !isReportLocked(reports.get(m.id)))
@@ -38,6 +45,20 @@ export function HomePage() {
   }, [me.id, fedAdmin, clubIds.join()]);
 
   if (!data) return <TopBar title={t('app.name')} />;
+  const hasSheet = (m: { id: string }, teamId: string) => data.submittedSheets.has(`${m.id}|${teamId}`);
+  /** Team sheet status: the club's own sheet for club admins, both teams for the referee. */
+  const sheetChip = (m: (typeof data.upcoming)[number]) => {
+    const mine = [m.home_team_id, m.away_team_id].filter((id) => data.myTeamIds.has(id));
+    if (mine.length) {
+      const done = mine.every((id) => hasSheet(m, id));
+      return <span className={`chip ${done ? '' : 'warn'}`}>{done ? t('sheet.chip_submitted') : t('sheet.chip_missing')}</span>;
+    }
+    if (m.referee_user_id === me.id || fedAdmin) {
+      const n = [m.home_team_id, m.away_team_id].filter((id) => hasSheet(m, id)).length;
+      return <span className={`chip ${n === 2 ? '' : 'grey'}`}>{t('sheet.chip_count', { n })}</span>;
+    }
+    return null;
+  };
   const card = (m: (typeof data.upcoming)[number], extra?: React.ReactNode) => (
     <div key={m.id}>
       <MatchCard match={m} report={data.reports.get(m.id)} home={teams.get(m.home_team_id)} away={teams.get(m.away_team_id)} extra={extra} />
@@ -97,7 +118,7 @@ export function HomePage() {
             <div className="list">
               {data.refereeDue.length ? (
                 data.refereeDue.map((m) =>
-                  card(m, m.kickoff_at < new Date().toISOString() ? <span className="chip warn">{t('home.report_due')}</span> : null),
+                  card(m, m.kickoff_at < new Date().toISOString() ? <span className="chip warn">{t('home.report_due')}</span> : sheetChip(m)),
                 )
               ) : (
                 <Empty />
@@ -107,7 +128,7 @@ export function HomePage() {
         )}
 
         <h2>{t('home.upcoming')}</h2>
-        <div className="list">{data.upcoming.length ? data.upcoming.map((m) => card(m)) : <Empty />}</div>
+        <div className="list">{data.upcoming.length ? data.upcoming.map((m) => card(m, sheetChip(m))) : <Empty />}</div>
 
         <h2>{t('home.recent')}</h2>
         <div className="list">{data.recent.length ? data.recent.map((m) => card(m)) : <Empty />}</div>

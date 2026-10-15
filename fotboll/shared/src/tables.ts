@@ -168,6 +168,13 @@ export const schemas = {
     minute: z.number().int().min(0).max(130),
     added_time: z.number().int().min(0).max(30).nullable().optional(),
   }),
+  /** A club's submitted lineup for a match (truppanmälan); one per team and match. */
+  team_sheets: z.object({
+    id: uuid,
+    match_id: uuid,
+    team_id: uuid,
+    status: z.enum(['draft', 'submitted']),
+  }),
   /**
    * Transfer to another club. The receiving club applies; the current club
    * (`from_club_id`, set by the server) releases; the federation approves.
@@ -245,7 +252,10 @@ export type MatchReport = Inferred<'match_reports'> &
     approved_at: string | null;
     approved_by: string | null;
   };
-export type MatchLineup = Inferred<'match_lineups'> & SyncMeta;
+/** `player_name` is set by the server so everyone who sees the lineup can read it. */
+export type MatchLineup = Inferred<'match_lineups'> & SyncMeta & { player_name?: string | null };
+export type TeamSheet = Inferred<'team_sheets'> &
+  SyncMeta & { submitted_at: string | null; submitted_by: string | null };
 export type MatchEvent = Inferred<'match_events'> & SyncMeta & { recorded_by: string | null };
 export type Suspension = Inferred<'suspensions'> & SyncMeta;
 export type Transfer = Inferred<'transfers'> &
@@ -276,6 +286,7 @@ export interface RowTypes {
   match_events: MatchEvent;
   suspensions: Suspension;
   transfers: Transfer;
+  team_sheets: TeamSheet;
   user_profiles: UserProfile;
 }
 

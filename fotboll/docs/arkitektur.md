@@ -30,7 +30,7 @@ Se `server/migrations/001_init.sql` (Postgres) och `shared/src/tables.ts` (zod-s
 | Organisation och åtkomst | `federations`, `users`, `role_assignments`, `sessions` |
 | Register | `clubs`, `players`, `registrations`, `media` |
 | Tävling | `seasons`, `competitions`, `teams`, `squad_members`, `venues`, `matches` |
-| Matchrapport | `match_reports` (id = match-id), `match_lineups`, `match_events` |
+| Matchrapport | `match_reports` (id = match-id), `team_sheets`, `match_lineups`, `match_events` |
 | Övergångar | `transfers` |
 | Disciplin | `suspensions` (manuella avstängningar). Kortregler finns på `competitions`. |
 | Synkhantering | `applied_mutations`, `conflict_log` |
@@ -89,6 +89,21 @@ Klienten skickar sin kö i ordning, högst 200 ändringar per anrop:
 | Register | Fältvis senast-vinner. Överskrivna versioner loggas. |
 | Registreringar | Servern bestämmer. Bara förbundsadmin godkänner eller avslår, och ett godkännande flyttar spelaren till den nya klubben. |
 | Konton | Bara online (`/api/admin/*`), eftersom de innehåller lösenord och påverkar andra användare. |
+
+### Truppanmälan
+
+Klubben fyller i sin laguppställning (`match_lineups`) och lämnar in den (`team_sheets`, en per lag och match).
+
+- **Kontroller före inlämning** (`shared/src/teamsheet.ts`): 7–11 startspelare, exakt en målvakt bland
+  startspelarna, en kapten, tröjnummer på alla utan dubbletter, och inga avstängda spelare. Servern kontrollerar
+  samma sak och avvisar med `sheet_<problem>`.
+- **Vem som lämnar in:** Bara lagets egen klubb, eller förbundet, och bara tills matchrapporten är inskickad.
+- **Ändringar efter inlämning:** Ändrar klubben laguppställningen sätter servern anmälan tillbaka till `draft`, och den måste lämnas in igen.
+  Domarens och förbundets rättelser på matchdagen påverkar inte anmälan.
+- **Id:** Anmälans id räknas fram från match och lag (`teamSheetId`). Två telefoner i samma klubb skriver då till samma rad.
+- **Namn:** `match_lineups.player_name` sätts av servern, så att domaren, motståndaren och förbundet kan läsa
+  laguppställningen utan att få spelarens övriga personuppgifter. Namnet hålls aktuellt när spelaren byter namn,
+  och töms vid GDPR-radering.
 
 ### Avstängningar
 

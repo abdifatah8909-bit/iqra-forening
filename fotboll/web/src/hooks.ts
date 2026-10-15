@@ -97,6 +97,9 @@ export const can = {
   submitReport: (me: Me, match: Match, report: MatchReport | undefined) =>
     match.referee_user_id === me.id && !isReportLocked(report),
   requestTransfer: (me: Me) => isFedAdmin(me) || adminClubIds(me).length > 0,
+  /** The team's own club submits its team sheet (or the federation), until the report is in. */
+  submitTeamSheet: (me: Me, team: Team | undefined, report: MatchReport | undefined) =>
+    isFedAdmin(me) || (!!team && adminClubIds(me).includes(team.club_id) && !isReportLocked(report)),
 };
 
 /** The person as a party to transfers (see shared/src/transfers.ts). */

@@ -16,6 +16,7 @@ En mobil-först PWA som fungerar **offline**, på somaliska, engelska och arabis
 - Klubb- och spelarregister med foto
 - Truppsammansättning
 - Spelschema med round-robin-generator
+- Truppanmälan: klubben lämnar in sin laguppställning före matchen, och domaren, motståndaren och förbundet ser den
 - Matchrapport med trupper, mål, kort och byten
 - Serietabeller som räknas fram på enheten
 - Övergångar mellan klubbar: den nya klubben ansöker, den nuvarande klubben släpper spelaren och förbundet godkänner
@@ -114,6 +115,7 @@ Testerna täcker:
 - **Inbjudningar och lösenord:** engångslänkar, utgångstid, att bara den senaste länken gäller, och att svaret på "glömt lösenord" inte avslöjar om adressen finns.
 - **Avstängningar:** röda kort, andra gula, ackumulerade gula kort, inställda och uppskjutna matcher, manuella avstängningar, och att servern stoppar avstängda spelare i laguppställningen.
 - **Publik sida:** bara inskickade resultat och inga personuppgifter.
+- **Truppanmälan:** kontrollerna (startspelare, målvakt, kapten, tröjnummer, avstängda), att bara den egna klubben lämnar in, att en ändring kräver ny inlämning och att motståndaren ser namnen.
 - **Övergångar:** att stegen sker i rätt ordning och av rätt part, att spelaren flyttas vid godkännande, och vem som ser spelaren under tiden.
 - **Synkprotokollet:** inkrementell pull, sidindelning (2 500 rader), idempotens, fältvis sammanslagning med konfliktlogg och gravstenar.
 - **Behörigheter:** klubbadmin och domare, referenser mellan förbund, samtycke för foto av minderåriga.

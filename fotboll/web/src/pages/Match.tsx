@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import {
   banFor,
   EVENT_TYPES,
+  teamSheetId,
+  teamSheetProblems,
   MATCH_STATUSES,
   scoreFromEvents,
   type EventType,
@@ -12,9 +14,9 @@ import {
   type MatchEvent,
   type MatchLineup,
   type MatchReport,
-  type Player,
   type Ban,
   type Team,
+  type TeamSheet,
 } from '@fotboll/shared';
 import { ask, Empty, Field, ReportChip, Tabs, TopBar, useToast } from '../components';
 import { db } from '../db';
@@ -33,14 +35,15 @@ export function MatchPage() {
   const data = useLiveQuery(async () => {
     const match = await db.data('matches').get(id);
     if (!match) return null;
-    const [report, lineups, events, competition, venue] = await Promise.all([
+    const [report, lineups, events, competition, venue, sheets] = await Promise.all([
       db.data('match_reports').get(id),
       db.data('match_lineups').where('match_id').equals(id).toArray(),
       db.data('match_events').where('match_id').equals(id).toArray(),
       db.data('competitions').get(match.competition_id),
       match.venue_id ? db.data('venues').get(match.venue_id) : undefined,
+      db.data('team_sheets').where('match_id').equals(id).toArray(),
     ]);
-    return { match, report, lineups, events, competition, venue };
+    return { match, report, lineups, events, competition, venue, sheets };
   }, [id]);
 
   const bans = useBans();
@@ -58,7 +61,11 @@ export function MatchPage() {
       </>
     );
 
-  const { match, report, lineups, events, competition, venue } = data;
+  const { match, report, lineups, events, competition, venue, sheets } = data;
+  // Players of the other club are not on this device, but their lineup rows carry the name.
+  const lineupNames = new Map(lineups.map((l) => [l.player_id, l.player_name]));
+  const nameOf = (playerId: string | null | undefined) =>
+    (playerId && (playerName(lookups.players.get(playerId)) || lineupNames.get(playerId))) || t('match.unknown_player');
   const home = lookups.teams.get(match.home_team_id);
   const away = lookups.teams.get(match.away_team_id);
   const locked = isReportLocked(report);
@@ -100,8 +107,8 @@ export function MatchPage() {
 
         {tab === 'events' ? (
           <>
-            <Timeline events={events} match={match} editable={editEvents} />
-            {editEvents && <EventForm match={match} home={home} away={away} lineups={lineups} />}
+            <Timeline events={events} match={match} editable={editEvents} nameOf={nameOf} />
+            {editEvents && <EventForm match={match} home={home} away={away} lineups={lineups} nameOf={nameOf} />}
           </>
         ) : (
           <>
@@ -114,7 +121,10 @@ export function MatchPage() {
                     match={match}
                     lineups={lineups.filter((l) => l.team_id === team.id)}
                     editable={can.editLineup(me, match, team, report)}
+                    canSubmit={can.submitTeamSheet(me, team, report)}
+                    sheet={sheets.find((x) => x.team_id === team.id && !x.deleted_at)}
                     bans={bans}
+                    nameOf={nameOf}
                   />
                 ),
             )}
@@ -134,12 +144,13 @@ function eventIcon(type: EventType) {
   return <span aria-hidden>⚽</span>;
 }
 
-function Timeline({ events, match, editable }: { events: MatchEvent[]; match: Match; editable: boolean }) {
+type NameOf = (playerId: string | null | undefined) => string;
+
+function Timeline({ events, match, editable, nameOf: name }: { events: MatchEvent[]; match: Match; editable: boolean; nameOf: NameOf }) {
   const { t } = useTranslation();
-  const { players, teams } = useLookups();
+  const { teams } = useLookups();
   const sorted = [...events].sort((a, b) => a.minute - b.minute || (a.added_time ?? 0) - (b.added_time ?? 0));
   if (!sorted.length) return <div className="list"><div className="empty">{t('match.no_events')}</div></div>;
-  const name = (id: string | null | undefined) => (id ? playerName(players.get(id)) || t('match.unknown_player') : t('match.unknown_player'));
 
   return (
     <div className="list timeline">
@@ -168,9 +179,20 @@ function Timeline({ events, match, editable }: { events: MatchEvent[]; match: Ma
   );
 }
 
-function EventForm({ match, home, away, lineups }: { match: Match; home?: Team; away?: Team; lineups: MatchLineup[] }) {
+function EventForm({
+  match,
+  home,
+  away,
+  lineups,
+  nameOf,
+}: {
+  match: Match;
+  home?: Team;
+  away?: Team;
+  lineups: MatchLineup[];
+  nameOf: NameOf;
+}) {
   const { t } = useTranslation();
-  const { players } = useLookups();
   const [type, setType] = useState<EventType>('goal');
   const [teamId, setTeamId] = useState(match.home_team_id);
   const [playerId, setPlayerId] = useState('');
@@ -184,7 +206,7 @@ function EventForm({ match, home, away, lineups }: { match: Match; home?: Team; 
   const option = (l: MatchLineup) => (
     <option key={l.player_id} value={l.player_id}>
       {l.shirt_number != null ? `${l.shirt_number}. ` : ''}
-      {playerName(players.get(l.player_id))}
+      {nameOf(l.player_id)}
     </option>
   );
   const valid = minute !== '' && (type !== 'sub' || (playerId && offId && playerId !== offId));
@@ -262,17 +284,24 @@ function LineupSection({
   match,
   lineups,
   editable,
+  canSubmit,
+  sheet,
   bans,
+  nameOf,
 }: {
   team: Team;
   match: Match;
   lineups: MatchLineup[];
   editable: boolean;
+  /** This person submits the team sheet for the club (the club's admins, or the federation). */
+  canSubmit: boolean;
+  sheet?: TeamSheet;
   bans: Ban[];
+  nameOf: NameOf;
 }) {
   const { t } = useTranslation();
   const me = useMe();
-  const { players } = useLookups();
+  const { users } = useLookups();
   const banLabel = useBanLabel();
   // Suspended players cannot be picked; the federation may override (the server agrees).
   const canOverride = isFedAdmin(me);
@@ -281,7 +310,24 @@ function LineupSection({
   const inLineup = new Set(lineups.map((l) => l.player_id));
   const sorted = [...lineups].sort((a, b) => Number(b.is_starter) - Number(a.is_starter) || (a.shirt_number ?? 99) - (b.shirt_number ?? 99));
 
-  const toggle = (l: MatchLineup, field: 'is_starter' | 'is_captain' | 'is_goalkeeper') => save('match_lineups', { id: l.id, [field]: !l[field] });
+  const submitted = sheet?.status === 'submitted';
+  const suspended = new Set(lineups.filter((l) => banFor(bans, l.player_id, match)).map((l) => l.player_id));
+  const problems = teamSheetProblems(lineups, suspended);
+  const sheetId = teamSheetId(match.id, team.id);
+  // A change by the club after submitting needs a new submission (the server does the same).
+  const isClubEdit = canSubmit && !isFedAdmin(me) && match.referee_user_id !== me.id;
+  const changed = async () => {
+    if (isClubEdit && submitted) await save('team_sheets', { id: sheetId, status: 'draft' });
+  };
+  const update = async (l: MatchLineup, patch: Partial<MatchLineup>) => {
+    await save('match_lineups', { id: l.id, ...patch });
+    await changed();
+  };
+  const toggle = (l: MatchLineup, field: 'is_starter' | 'is_captain' | 'is_goalkeeper') => update(l, { [field]: !l[field] });
+  const submit = async () => {
+    if (!(await ask(t('sheet.submit_confirm', { team: team.name }), { confirmLabel: t('sheet.submit') }))) return;
+    await save('team_sheets', sheet ? { id: sheet.id, status: 'submitted' } : { id: sheetId, match_id: match.id, team_id: team.id, status: 'submitted' });
+  };
 
   return (
     <section>
@@ -291,24 +337,51 @@ function LineupSection({
           {lineups.filter((l) => l.is_starter).length} + {lineups.filter((l) => !l.is_starter).length}
         </span>
       </div>
+      <div className="row" style={{ marginBlockEnd: 8 }}>
+        {submitted ? (
+          <span className="chip">
+            {t('sheet.submitted', {
+              time: sheet!.submitted_at ? formatDateTime(sheet!.submitted_at, { dateStyle: 'short', timeStyle: 'short' }) : '',
+            })}
+            {sheet!.submitted_by && users.get(sheet!.submitted_by) ? ` · ${users.get(sheet!.submitted_by)!.display_name}` : ''}
+          </span>
+        ) : (
+          <span className="chip warn">{t('sheet.not_submitted')}</span>
+        )}
+      </div>
       <div className="list">
         {sorted.length === 0 && <div className="empty">{t('match.no_lineup')}</div>}
         {sorted.map((l) => {
-          const p = players.get(l.player_id);
           return (
             <div key={l.id}>
-              <span className="minute">{l.shirt_number ?? ''}</span>
+              {editable ? (
+                <input
+                  aria-label={t('player.shirt')}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={99}
+                  defaultValue={l.shirt_number ?? ''}
+                  key={`${l.id}:${l.shirt_number}`}
+                  className="shirt-input"
+                  onBlur={(e) => {
+                    const v = e.target.value === '' ? null : Number(e.target.value);
+                    if (v !== (l.shirt_number ?? null)) void update(l, { shirt_number: v });
+                  }}
+                />
+              ) : (
+                <span className="minute">{l.shirt_number ?? ''}</span>
+              )}
               <span className="grow">
-                <div className="ellipsis">{playerName(p) || t('match.unknown_player')}</div>
+                <div>{nameOf(l.player_id)}</div>
                 <div className="row">
                   {banFor(bans, l.player_id, match) && <span className="chip ban">{t('discipline.suspended')}</span>}
                   <span className={`chip ${l.is_starter ? '' : 'grey'}`}>{l.is_starter ? t('match.starter') : t('match.bench')}</span>
                   {l.is_captain && <span className="chip">{t('match.captain')}</span>}
                   {l.is_goalkeeper && <span className="chip">{t('match.goalkeeper')}</span>}
                 </div>
-              </span>
               {editable && (
-                <span className="row">
+                <span className="row" style={{ marginBlockStart: 6 }}>
                   <button className="secondary small" onClick={() => toggle(l, 'is_starter')} title={t('match.starter')}>
                     {l.is_starter ? '↓' : '↑'}
                   </button>
@@ -318,11 +391,12 @@ function LineupSection({
                   <button className="secondary small" onClick={() => toggle(l, 'is_goalkeeper')} title={t('match.goalkeeper')}>
                     🧤
                   </button>
-                  <button className="icon-btn" aria-label={t('common.remove')} onClick={() => remove('match_lineups', l.id)}>
+                  <button className="icon-btn" aria-label={t('common.remove')} onClick={async () => { await remove('match_lineups', l.id); await changed(); }}>
                     ✕
                   </button>
                 </span>
               )}
+              </span>
             </div>
           );
         })}
@@ -345,8 +419,8 @@ function LineupSection({
                     <input
                       type="checkbox"
                       disabled={!!ban && !canOverride}
-                      onChange={() =>
-                        save('match_lineups', {
+                      onChange={async () => {
+                        await save('match_lineups', {
                           match_id: match.id,
                           team_id: team.id,
                           player_id: s.player_id,
@@ -354,11 +428,12 @@ function LineupSection({
                           is_starter: lineups.filter((l) => l.is_starter).length < 11,
                           is_captain: false,
                           is_goalkeeper: s.position === 'GK',
-                        })
-                      }
+                        });
+                        await changed();
+                      }}
                     />
                     <span className="minute">{s.shirt_number ?? ''}</span>
-                    <span className="grow">{playerName(players.get(s.player_id) as Player | undefined) || t('match.unknown_player')}</span>
+                    <span className="grow">{nameOf(s.player_id)}</span>
                     {ban && <span className="chip ban">{banLabel(ban)}</span>}
                   </label>
                   );
@@ -366,6 +441,27 @@ function LineupSection({
             </div>
           )}
         </>
+      )}
+      {canSubmit && !submitted && (
+        <div className="card">
+          {problems.length > 0 ? (
+            <>
+              <p className="small" style={{ marginBlockEnd: 6 }}>
+                {t('sheet.before_submit')}
+              </p>
+              <ul className="small" style={{ marginBlock: '0 10px', paddingInlineStart: 20 }}>
+                {problems.map((p) => (
+                  <li key={p}>{t(`sheet.problem.${p}`)}</li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="small">{t('sheet.ready')}</p>
+          )}
+          <button className="block" disabled={problems.length > 0} onClick={submit}>
+            {t('sheet.submit')}
+          </button>
+        </div>
       )}
     </section>
   );

@@ -4,6 +4,7 @@ import {
   LOCKED_REPORT_STATUSES,
   OPEN_TRANSFER_STATUSES,
   scoreFromEvents,
+  teamSheetProblems,
   transferActions,
   type ReportStatus,
   type TransferStatus,
@@ -11,7 +12,7 @@ import {
 } from '@fotboll/shared';
 import type { UserContext } from '../auth.js';
 import type { Tx } from '../db.js';
-import { playerBanForMatch } from './discipline.js';
+import { bansForMatch, playerBanForMatch } from './discipline.js';
 
 type Row = Record<string, any>;
 
@@ -65,6 +66,7 @@ export const INSERT_DEFAULTS: Partial<Record<WritableTable, Row>> = {
   match_events: { player_id: null, related_player_id: null, added_time: null },
   suspensions: { competition_id: null, matches: null, ends_on: null, reason: null },
   transfers: { status: 'pending_club', note: null, response_note: null },
+  team_sheets: { status: 'draft' },
 };
 
 /**
@@ -90,6 +92,7 @@ export const REFERENCES: Partial<Record<WritableTable, Record<string, string>>> 
   match_events: { match_id: 'matches', team_id: 'teams', player_id: 'players', related_player_id: 'players' },
   suspensions: { player_id: 'players', competition_id: 'competitions' },
   transfers: { player_id: 'players', to_club_id: 'clubs' },
+  team_sheets: { match_id: 'matches', team_id: 'teams' },
 };
 
 const FORBIDDEN = 'forbidden';
@@ -178,6 +181,15 @@ export const RULES: Record<WritableTable, TableRules> = {
       if (!ctx.clubIds.includes(before!.club_id) || after.club_id !== before!.club_id) return FORBIDDEN;
       return null;
     },
+    async afterWrite({ tx, op, after }) {
+      // Lineups show the player's name to everyone who sees the match; keep it current.
+      if (op !== 'update') return;
+      await tx.query(
+        `update match_lineups set player_name = $2
+         where player_id = $1 and player_name is distinct from $2`,
+        [after.id, `${after.first_name} ${after.last_name}`],
+      );
+    },
   },
 
   registrations: {
@@ -244,6 +256,53 @@ export const RULES: Record<WritableTable, TableRules> = {
         if (await playerBanForMatch(tx, after.player_id, after.match_id)) return 'player_suspended';
       }
       return null;
+    },
+    async serverFields({ tx, op, before, after }) {
+      if (op === 'update' && before!.player_id === after.player_id) return {};
+      const p = await one(tx, 'select first_name, last_name from players where id = $1', [after.player_id]);
+      return { player_name: p ? `${p.first_name} ${p.last_name}` : null };
+    },
+    async afterWrite({ tx, ctx, after }) {
+      // The club changed a submitted lineup: it must be submitted again. The referee's
+      // and the federation's corrections on match day leave the sheet as it is.
+      if (ctx.isFedAdmin) return;
+      const match = await one(tx, 'select referee_user_id from matches where id = $1', [after.match_id]);
+      if (match?.referee_user_id === ctx.userId) return;
+      await tx.query(
+        `update team_sheets set status = 'draft', updated_by = $3
+         where match_id = $1 and team_id = $2 and status = 'submitted' and deleted_at is null`,
+        [after.match_id, after.team_id, ctx.userId],
+      );
+    },
+  },
+
+  team_sheets: {
+    async check({ tx, ctx, op, before, after }) {
+      if (op === 'delete') return ctx.isFedAdmin ? null : FORBIDDEN;
+      if (before && (before.match_id !== after.match_id || before.team_id !== after.team_id)) return FORBIDDEN;
+      const { match, reportStatus } = await matchInfo(tx, after.match_id);
+      if (after.team_id !== match.home_team_id && after.team_id !== match.away_team_id) return 'team_not_in_match';
+      if (!ctx.isFedAdmin) {
+        // Only the team's own club submits its sheet, until the match report is in.
+        if (!ctx.clubIds.includes(await teamClub(tx, after.team_id))) return FORBIDDEN;
+        if (isLocked(reportStatus)) return 'report_locked';
+      }
+      if (after.status !== 'submitted') return null;
+      const lineups = (
+        await tx.query('select * from match_lineups where match_id = $1 and team_id = $2 and deleted_at is null', [
+          after.match_id,
+          after.team_id,
+        ])
+      ).rows;
+      const banned = await bansForMatch(tx, after.match_id, lineups.map((l) => l.player_id));
+      const problems = teamSheetProblems(lineups, new Set(banned.keys()));
+      return problems.length ? `sheet_${problems[0]}` : null;
+    },
+    async serverFields({ ctx, before, after }) {
+      if (after.status === 'submitted' && before?.status !== 'submitted') {
+        return { submitted_at: new Date().toISOString(), submitted_by: ctx.userId };
+      }
+      return {};
     },
   },
 

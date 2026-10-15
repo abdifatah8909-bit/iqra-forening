@@ -95,7 +95,15 @@
     "player_suspended": "Ciyaaryahanku wuu ganaaxan yahay ciyaartan.",
     "already_in_club": "Ciyaaryahanku horay ayuu ugu jiraa kooxdaas.",
     "transfer_decided": "Wareejinta horay ayaa go’aan looga gaaray.",
-    "transfer_outdated": "Ciyaaryahanku wuu beddelay kooxda tan iyo codsiga. Samee codsi cusub."
+    "transfer_outdated": "Ciyaaryahanku wuu beddelay kooxda tan iyo codsiga. Samee codsi cusub.",
+    "sheet_too_few_starters": "Ugu yaraan 7 ciyaartoy oo bilaabaya.",
+    "sheet_too_many_starters": "Ugu badnaan 11 ciyaartoy oo bilaabaya.",
+    "sheet_no_goalkeeper": "Calaamadee goolhaye ka mid ah kuwa bilaabaya.",
+    "sheet_several_goalkeepers": "Hal goolhaye oo keliya oo bilaabaya.",
+    "sheet_no_captain": "Dooro kabtan ka mid ah kuwa bilaabaya.",
+    "sheet_missing_numbers": "Ciyaaryahan kasta wuxuu u baahan yahay lambar funaanad.",
+    "sheet_duplicate_numbers": "Laba ciyaaryahan ayaa isku lambar funaanad leh.",
+    "sheet_suspended_player": "Ciyaaryahan ganaaxan ayaa ku jira safka."
   },
   "home": {
     "hello": "Soo dhawoow, {{name}}",
@@ -420,5 +428,26 @@
     "already_in_club": "Horay ayuu ugu jiraa kooxdan",
     "has_open": "Wuxuu leeyahay wareejin socota",
     "apply": "Codso"
+  },
+  "sheet": {
+    "submit": "Gudbi liiska kooxda",
+    "submit_confirm": "Ma gudbinaysaa liiska kooxda {{team}}? Garsooraha, kooxda ka soo horjeedda iyo ururka ayaa arki doona. Haddii aad safka beddesho kadib, mar kale gudbi.",
+    "submitted": "Liiska kooxda waa la gudbiyay {{time}}",
+    "not_submitted": "Liiska kooxda lama gudbin",
+    "before_submit": "Ka hor intaadan gudbin:",
+    "ready": "Safku waa dhammaystiran yahay, waana la gudbin karaa.",
+    "chip_submitted": "Liiska waa la gudbiyay",
+    "chip_missing": "Liiska kooxda ayaa maqan",
+    "chip_count": "Liisaska kooxaha {{n}}/2",
+    "problem": {
+      "too_few_starters": "Ugu yaraan 7 ciyaartoy oo bilaabaya.",
+      "too_many_starters": "Ugu badnaan 11 ciyaartoy oo bilaabaya.",
+      "no_goalkeeper": "Calaamadee goolhaye ka mid ah kuwa bilaabaya.",
+      "several_goalkeepers": "Hal goolhaye oo keliya oo bilaabaya.",
+      "no_captain": "Dooro kabtan ka mid ah kuwa bilaabaya.",
+      "missing_numbers": "Ciyaaryahan kasta wuxuu u baahan yahay lambar funaanad.",
+      "duplicate_numbers": "Laba ciyaaryahan ayaa isku lambar funaanad leh.",
+      "suspended_player": "Ciyaaryahan ganaaxan ayaa ku jira safka."
+    }
   }
 }

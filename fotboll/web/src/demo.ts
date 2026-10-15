@@ -138,6 +138,14 @@ export const demoTransport: Transport = {
           continue;
         }
       }
+      if (m.table === 'match_lineups' && 'player_id' in m.data) {
+        const p = await db.data('players').get(row.player_id as string);
+        row.player_name = p ? `${p.first_name} ${p.last_name}` : null;
+      }
+      if (m.table === 'team_sheets' && m.data.status === 'submitted' && !local?.submitted_at) {
+        Object.assign(row, { submitted_at: now, submitted_by: me?.id });
+      }
+      if (m.table === 'team_sheets' && m.data.status === 'draft') Object.assign(row, { submitted_at: null, submitted_by: null });
       if (m.table === 'media') row.upload_status = 'done';
       results.push({ id: m.id, status: 'ok', row });
     }

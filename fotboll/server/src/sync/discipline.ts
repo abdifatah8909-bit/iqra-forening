@@ -2,13 +2,14 @@ import { banFor, computeBans, LOCKED_REPORT_STATUSES, type Ban } from '@fotboll/
 import type { Tx } from '../db.js';
 
 /**
- * Server side of the suspension rules: loads what computeBans needs for one
- * player in one match's competition and answers whether they are banned.
+ * Server side of the suspension rules: loads what computeBans needs for some
+ * players in one match's competition and answers who is banned from the match.
  */
-export async function playerBanForMatch(tx: Tx, playerId: string, matchId: string): Promise<Ban | undefined> {
+export async function bansForMatch(tx: Tx, matchId: string, playerIds: string[]): Promise<Map<string, Ban>> {
+  const banned = new Map<string, Ban>();
   const rows = async (sql: string, params: unknown[]) => (await tx.query(sql, params)).rows;
   const match = (await rows('select * from matches where id = $1', [matchId]))[0];
-  if (!match) return undefined;
+  if (!match || !playerIds.length) return banned;
   const comp = match.competition_id;
 
   const competitions = await rows(
@@ -30,13 +31,15 @@ export async function playerBanForMatch(tx: Tx, playerId: string, matchId: strin
   );
   const events = await rows(
     `select e.match_id, e.team_id, e.player_id, e.type from match_events e join matches m on m.id = e.match_id
-     where m.competition_id = $1 and e.player_id = $2 and e.deleted_at is null`,
-    [comp, playerId],
+     where m.competition_id = $1 and e.player_id = any($2) and e.deleted_at is null`,
+    [comp, playerIds],
   );
-  const suspensions = await rows('select * from suspensions where player_id = $1 and deleted_at is null', [playerId]);
+  const suspensions = await rows('select * from suspensions where player_id = any($1) and deleted_at is null', [
+    playerIds,
+  ]);
   const squads = await rows(
-    'select team_id, player_id from squad_members where player_id = $1 and deleted_at is null',
-    [playerId],
+    'select team_id, player_id from squad_members where player_id = any($1) and deleted_at is null',
+    [playerIds],
   );
 
   const bans = computeBans({
@@ -48,5 +51,13 @@ export async function playerBanForMatch(tx: Tx, playerId: string, matchId: strin
     suspensions,
     squads,
   });
-  return banFor(bans, playerId, match);
+  for (const id of playerIds) {
+    const ban = banFor(bans, id, match);
+    if (ban) banned.set(id, ban);
+  }
+  return banned;
+}
+
+export async function playerBanForMatch(tx: Tx, playerId: string, matchId: string): Promise<Ban | undefined> {
+  return (await bansForMatch(tx, matchId, [playerId])).get(playerId);
 }

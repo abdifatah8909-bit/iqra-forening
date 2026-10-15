@@ -184,6 +184,7 @@ export function registerAdminRoutes(
            where id = $1`,
           [id, req.user.userId],
         );
+        await tx.query(`update match_lineups set player_name = '–' where player_id = $1`, [id]);
         if (player.photo_media_id) {
           await tx.query('update media set deleted_at = now() where id = $1', [player.photo_media_id]);
         }

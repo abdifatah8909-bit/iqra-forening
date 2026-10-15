@@ -95,7 +95,15 @@
     "player_suspended": "The player is suspended for this match.",
     "already_in_club": "The player already belongs to that club.",
     "transfer_decided": "The transfer has already been decided.",
-    "transfer_outdated": "The player has changed club since the request. Make a new request."
+    "transfer_outdated": "The player has changed club since the request. Make a new request.",
+    "sheet_too_few_starters": "At least 7 starting players.",
+    "sheet_too_many_starters": "At most 11 starting players.",
+    "sheet_no_goalkeeper": "Mark a goalkeeper among the starting players.",
+    "sheet_several_goalkeepers": "Only one starting goalkeeper.",
+    "sheet_no_captain": "Choose a captain among the starting players.",
+    "sheet_missing_numbers": "Every player needs a shirt number.",
+    "sheet_duplicate_numbers": "Two players have the same shirt number.",
+    "sheet_suspended_player": "A suspended player is in the lineup."
   },
   "home": {
     "hello": "Hello, {{name}}",
@@ -420,5 +428,26 @@
     "already_in_club": "Already in this club",
     "has_open": "Already has an open transfer",
     "apply": "Apply"
+  },
+  "sheet": {
+    "submit": "Submit team sheet",
+    "submit_confirm": "Submit {{team}}'s team sheet? The referee, the opponent and the federation will see it. If you change the lineup afterwards, submit it again.",
+    "submitted": "Team sheet submitted {{time}}",
+    "not_submitted": "Team sheet not submitted",
+    "before_submit": "Before you can submit:",
+    "ready": "The lineup is complete and can be submitted.",
+    "chip_submitted": "Team sheet in",
+    "chip_missing": "Team sheet missing",
+    "chip_count": "Team sheets {{n}}/2",
+    "problem": {
+      "too_few_starters": "At least 7 starting players.",
+      "too_many_starters": "At most 11 starting players.",
+      "no_goalkeeper": "Mark a goalkeeper among the starting players.",
+      "several_goalkeepers": "Only one starting goalkeeper.",
+      "no_captain": "Choose a captain among the starting players.",
+      "missing_numbers": "Every player needs a shirt number.",
+      "duplicate_numbers": "Two players have the same shirt number.",
+      "suspended_player": "A suspended player is in the lineup."
+    }
   }
 }

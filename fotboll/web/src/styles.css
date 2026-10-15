@@ -200,3 +200,4 @@ a.button { text-decoration: none; }
 .steps li.done { color: var(--ink); }
 .steps li.done::before { background: var(--brand); border-color: var(--brand); }
 .steps li.stopped::before { border-color: var(--red); }
+.shirt-input { inline-size: 64px; flex: none; padding-inline: 6px; text-align: center; }
