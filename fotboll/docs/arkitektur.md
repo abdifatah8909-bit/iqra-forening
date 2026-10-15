@@ -166,7 +166,11 @@ pending_club ──(nuvarande klubb släpper)──▶ pending_federation ──
 
 - **Visas:** tävlingar, lag, klubbar (namn, ort och logotyp), arenor, spelschema och resultat från inskickade
   eller godkända rapporter.
-- **Visas aldrig:** spelare, domare, användare, foton på spelare eller utkast till rapporter.
+- **Laguppställningar** (`GET /api/public/federations/:id/matches/:matchId`) visas bara för seniorserier
+  (`competitions.is_senior`). Ett lags laguppställning blir publik när truppen är inlämnad, eller när matchrapporten är inskickad.
+  Bara tröjnummer, namn och roll (startspelare, kapten, målvakt) visas. Spelare som är under 18 år på matchdagen visas utan namn,
+  även i seniorserier. Ungdomsserier publicerar inga laguppställningar alls.
+- **Visas aldrig:** spelarnas övriga uppgifter, domare, användare, foton på spelare eller utkast.
 - **Tabellen** räknas fram i webbläsaren med samma `computeStandings`.
 - **Svaren cachas** i 60 sekunder (`Cache-Control: public`).
 

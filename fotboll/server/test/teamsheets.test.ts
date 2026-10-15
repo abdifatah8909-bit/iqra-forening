@@ -120,6 +120,32 @@ describe('team sheets', () => {
     expect(blocked.reason).toBe('sheet_suspended_player');
   });
 
+  it('publishes submitted lineups of senior competitions, without names of minors', async () => {
+    const l = await league(env);
+    const rows = await lineup(l);
+    // One of the starters is 16.
+    await env.db.query(`update players set birth_date = '2010-03-03' where id = $1`, [l.playersA[2]]);
+    await pushOk(env, env.tokens.clubA, rows);
+    const url = `/api/public/federations/${env.federationId}/matches/${l.matchId}`;
+    const get = async () => (await env.app.inject({ method: 'GET', url })).json();
+
+    // A draft is not public.
+    expect(await get()).toEqual({ lineups_public: true, published_team_ids: [], lineups: [] });
+
+    await pushOk(env, env.tokens.clubA, [sheet(l, 'submitted')]);
+    const detail = await get();
+    expect(detail.published_team_ids).toEqual([l.teamA]);
+    expect(detail.lineups).toHaveLength(11);
+    const minor = detail.lineups.find((r: { shirt_number: number }) => r.shirt_number === 3);
+    expect(minor.name).toBeNull();
+    expect(detail.lineups.filter((r: { name: string | null }) => r.name).length).toBe(10);
+    expect(JSON.stringify(detail)).not.toContain('birth');
+
+    // Youth competitions never publish lineups.
+    await pushOk(env, env.tokens.admin, [mutation('competitions', { id: l.competitionId, is_senior: false })]);
+    expect(await get()).toEqual({ lineups_public: false, published_team_ids: [], lineups: [] });
+  });
+
   it('derives the same sheet id on every device', () => {
     const id = teamSheetId('01a13f7b-af42-71b8-99c8-169bc7740f2a', '01a13f7b-1111-72b8-99c8-269bc7740f2b');
     expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);

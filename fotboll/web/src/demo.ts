@@ -1,4 +1,5 @@
 import {
+  isMinor,
   initialTransferStatus,
   LOCALES,
   LOCKED_REPORT_STATUSES,
@@ -7,6 +8,9 @@ import {
   scoreFromEvents,
   type MutationResult,
   type PublicData,
+  type PublicMatchDetail,
+  type RowTypes,
+  type SyncTable,
   type PullResponse,
   type ReportStatus,
   type Locale,
@@ -158,20 +162,25 @@ export const demoTransport: Transport = {
  * (so a report submitted in the demo shows up), or from the snapshot before
  * anyone has signed in.
  */
-export async function demoPublicData(): Promise<PublicData> {
-  type Rows = Record<string, Record<string, unknown>[]>;
-  let src: Rows;
+/**
+ * Rows for the public pages: this browser's copy, unless it is from an older
+ * demo or nobody has signed in yet, in which case the built-in example data.
+ */
+async function publicSource(): Promise<<K extends SyncTable>(table: K) => Promise<RowTypes[K][]>> {
   const s = await loadSnapshot();
-  // This browser's copy, unless it is from an older demo or nobody has signed in yet.
-  if ((await db.getMeta<string>('scope')) === demoVersion(s) && (await db.data('federations').count())) {
-    const tables = ['federations', 'seasons', 'competitions', 'clubs', 'teams', 'venues', 'matches', 'match_reports'] as const;
-    src = Object.fromEntries(
-      await Promise.all(tables.map(async (t) => [t, (await db.data(t).toArray()) as unknown as Record<string, unknown>[]])),
-    );
-  } else {
-    src = shiftDates(s.pull).changes as Rows;
+  const local = (await db.getMeta<string>('scope')) === demoVersion(s) && (await db.data('federations').count()) > 0;
+  const snapshot = shiftDates(s.pull).changes;
+  return async (table) =>
+    ((local ? await db.data(table).toArray() : (snapshot[table] ?? [])) as RowTypes[typeof table][]).filter((r) => !r.deleted_at);
+}
+
+export async function demoPublicData(): Promise<PublicData> {
+  const rows = await publicSource();
+  const src: Record<string, Record<string, unknown>[]> = {};
+  for (const t of ['federations', 'seasons', 'competitions', 'clubs', 'teams', 'venues', 'matches', 'match_reports'] as const) {
+    src[t] = (await rows(t)) as unknown as Record<string, unknown>[];
   }
-  const live = (t: string) => (src[t] ?? []).filter((r) => !r.deleted_at);
+  const live = (t: string) => src[t] ?? [];
   const f = live('federations')[0];
   return {
     federation: { id: f.id, name: f.name, country: f.country ?? null, default_locale: f.default_locale } as PublicData['federation'],
@@ -259,4 +268,36 @@ export async function demoSearchPlayers(q: Record<string, string>): Promise<Play
     club_name: p.club_id ? (clubs.get(p.club_id) ?? null) : null,
     open_transfer: open.has(p.id),
   }));
+}
+
+/** The public match page in the demo, with the same rules as the server (see server/src/public.ts). */
+export async function demoPublicMatch(matchId: string): Promise<PublicMatchDetail> {
+  const none = { lineups_public: false, published_team_ids: [], lineups: [] };
+  const rows = await publicSource();
+  const match = (await rows('matches')).find((m) => m.id === matchId);
+  const competition = match && (await rows('competitions')).find((c) => c.id === match.competition_id);
+  if (!match || !competition) return none;
+  if (competition.is_senior === false) return none;
+  const report = (await rows('match_reports')).find((r) => r.id === matchId);
+  const sheets = (await rows('team_sheets')).filter((x) => x.match_id === matchId);
+  const published = report && LOCKED_REPORT_STATUSES.includes(report.status)
+    ? [match.home_team_id, match.away_team_id]
+    : sheets.filter((x) => x.status === 'submitted' && !x.deleted_at).map((x) => x.team_id);
+  const players = new Map((await rows('players')).map((p) => [p.id, p]));
+  const day = new Date(match.kickoff_at);
+  const lineups = (await rows('match_lineups'))
+    .filter((l) => l.match_id === matchId && published.includes(l.team_id))
+    .sort((a, b) => Number(b.is_starter) - Number(a.is_starter) || (a.shirt_number ?? 99) - (b.shirt_number ?? 99))
+    .map((l) => {
+      const p = players.get(l.player_id);
+      return {
+        team_id: l.team_id,
+        shirt_number: l.shirt_number ?? null,
+        name: p && isMinor(p.birth_date, day) ? null : (l.player_name ?? (p ? `${p.first_name} ${p.last_name}` : null)),
+        is_starter: l.is_starter,
+        is_captain: l.is_captain,
+        is_goalkeeper: l.is_goalkeeper,
+      };
+    });
+  return { lineups_public: true, published_team_ids: published, lineups };
 }

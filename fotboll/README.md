@@ -22,7 +22,7 @@ En mobil-först PWA som fungerar **offline**, på somaliska, engelska och arabis
 - Övergångar mellan klubbar: den nya klubben ansöker, den nuvarande klubben släpper spelaren och förbundet godkänner
 - Avstängningar: röda kort, två gula i samma match och ackumulerade gula kort ger automatiska avstängningar. Förbundet kan också besluta om egna avstängningar.
 - Inbjudningar och nytt lösenord via engångslänkar, som skickas med e-post eller delas via WhatsApp eller SMS
-- En publik sida med spelschema, resultat, tabeller och klubbar, som vem som helst kan se utan att logga in
+- En publik sida med spelschema, resultat, tabeller och klubbar, som vem som helst kan se utan att logga in. I seniorserier visas också inlämnade laguppställningar.
 
 **Roller:** förbundsadmin, klubbadmin och domare.
 
@@ -132,7 +132,7 @@ Testerna täcker:
 - **Inloggning med telefonnummer:** Konton kräver en e-postadress. Inbjudningslänken kan dock skickas via WhatsApp eller SMS.
 - **Avstängningar över säsonger:** En avstängning som inte hunnit avtjänas när säsongen tar slut följer inte med till nästa säsong. Förbundet får lägga in en manuell avstängning.
 - **Överklaganden:** Det går inte att ta bort en automatisk avstängning. Förbundsadmin kan ändå sätta in spelaren i laguppställningen.
-- **Publik sida:** Den är alltid på och visar inga spelarnamn eller målskyttar.
+- **Publik sida:** Den är alltid på. Spelarnamn visas bara i inlämnade laguppställningar i seniorserier, aldrig för spelare under 18 år. Målskyttar visas inte.
 - **Inloggningsspärren:** Ligger i minnet och gäller per serverinstans. Det gäller också gränsen för "glömt lösenord".
 - **Konfliktloggen:** Sparas, men visas inte i UI:t ännu (`GET /api/admin/conflicts`).
 - **Statistik:** Ingen skytteliga ännu. Datat finns i `match_events`.

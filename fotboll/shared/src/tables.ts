@@ -102,6 +102,8 @@ export const schemas = {
     points_win: z.number().int().min(0).max(10),
     points_draw: z.number().int().min(0).max(10),
     points_loss: z.number().int().min(0).max(10),
+    /** Senior competition: submitted lineups are shown on the public pages (players under 18 without name). */
+    is_senior: z.boolean(),
     /** Yellow cards that give a one-match ban (0 = no accumulation). */
     yellow_card_limit: z.number().int().min(0).max(20),
     /** Matches banned for a red card / for a second yellow in one match. */

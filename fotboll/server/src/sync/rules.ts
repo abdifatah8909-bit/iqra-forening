@@ -57,6 +57,7 @@ export const INSERT_DEFAULTS: Partial<Record<WritableTable, Row>> = {
     yellow_card_limit: 3,
     red_card_ban: 1,
     second_yellow_ban: 1,
+    is_senior: true,
   },
   squad_members: { shirt_number: null, position: null },
   venues: { address: null, lat: null, lng: null },

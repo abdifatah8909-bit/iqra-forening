@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, NavLink, Route, Routes, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { computeStandings, LOCALES, type PublicData } from '@fotboll/shared';
+import { computeStandings, LOCALES, type PublicData, type PublicLineup, type PublicMatchDetail } from '@fotboll/shared';
 import { api, ApiError } from '../api';
 import { Empty, StandingsTable, Tabs } from '../components';
-import { DEMO, demoPublicData } from '../demo';
+import { DEMO, demoPublicData, demoPublicMatch } from '../demo';
 import { chooseLanguage, formatDateTime, LANGUAGE_NAMES } from '../i18n';
 import emblem from '../emblem.svg';
 
@@ -104,6 +104,7 @@ function FederationSite() {
           <Routes>
             <Route index element={<Overview data={data} />} />
             <Route path="matches" element={<AllMatches data={data} />} />
+            <Route path="m/:match" element={<MatchView data={data} />} />
             <Route path="c/:comp" element={<CompetitionView data={data} />} />
             <Route path="clubs" element={<ClubList data={data} />} />
             <Route path="clubs/:club" element={<ClubView data={data} />} />
@@ -173,18 +174,14 @@ function MatchRow({ data, match, showCompetition = true }: { data: PublicData; m
   const result = p.results.get(match.id);
   const venue = match.venue_id ? p.venues.get(match.venue_id) : undefined;
   return (
-    <div style={{ display: 'block' }}>
+    <Link to={`/public/${data.federation.id}/m/${match.id}`} style={{ display: 'block' }}>
       <div className="spread small muted" style={{ marginBlockEnd: 4 }}>
         <span>
           {formatDateTime(match.kickoff_at, { weekday: 'short', day: 'numeric', month: 'short' })}
           {venue && ` · ${venue.name}`}
         </span>
         <span className="row">
-          {showCompetition && (
-            <Link to={`/public/${data.federation.id}/c/${match.competition_id}`} className="chip">
-              {p.compName(match.competition_id)}
-            </Link>
-          )}
+          {showCompetition && <span className="chip">{p.compName(match.competition_id)}</span>}
           {(match.status === 'postponed' || match.status === 'cancelled') && (
             <span className="chip warn">{t(`match.status.${match.status}`)}</span>
           )}
@@ -203,7 +200,7 @@ function MatchRow({ data, match, showCompetition = true }: { data: PublicData; m
         </span>
         <span className="team away">{p.teams.get(match.away_team_id)?.name}</span>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -408,6 +405,95 @@ function ClubView({ data }: { data: PublicData }) {
       <MatchList data={data} matches={upcoming.slice(0, 10)} />
       <h2>{t('home.recent')}</h2>
       <MatchList data={data} matches={played.slice(0, 10)} />
+    </>
+  );
+}
+
+/** One match: result or kick-off, and the lineups of senior competitions. */
+function MatchView({ data }: { data: PublicData }) {
+  const { match: matchId } = useParams() as { match: string };
+  const { t } = useTranslation();
+  const p = usePublic(data);
+  const [detail, setDetail] = useState<PublicMatchDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const match = data.matches.find((m) => m.id === matchId);
+
+  useEffect(() => {
+    const load = DEMO ? demoPublicMatch(matchId) : api<PublicMatchDetail>(`/public/federations/${data.federation.id}/matches/${matchId}`);
+    load.then(setDetail).catch((e) => setError(e instanceof ApiError ? e.code : 'unknown'));
+  }, [data.federation.id, matchId]);
+
+  if (!match) return <Empty />;
+  const result = p.results.get(match.id);
+  const venue = match.venue_id ? p.venues.get(match.venue_id) : undefined;
+  const teams = [match.home_team_id, match.away_team_id];
+
+  return (
+    <>
+      <div className="card scoreboard" style={{ marginBlockStart: 16 }}>
+        <div className="small muted" style={{ marginBlockEnd: 8 }}>
+          <Link to={`/public/${data.federation.id}/c/${match.competition_id}`}>{p.compName(match.competition_id)}</Link> ·{' '}
+          {t('match.round', { n: match.round })}
+        </div>
+        <div className="teams">
+          <strong>{p.teams.get(match.home_team_id)?.name}</strong>
+          <span className="score">{result ? `${result.home_score} – ${result.away_score}` : '–'}</span>
+          <strong>{p.teams.get(match.away_team_id)?.name}</strong>
+        </div>
+        {(match.status === 'postponed' || match.status === 'cancelled') && (
+          <div className="row" style={{ justifyContent: 'center', marginBlockStart: 8 }}>
+            <span className="chip warn">{t(`match.status.${match.status}`)}</span>
+          </div>
+        )}
+        <div className="small muted" style={{ marginBlockStart: 10 }}>
+          {formatDateTime(match.kickoff_at)}
+          {venue && ` · ${venue.name}`}
+        </div>
+      </div>
+
+      <h2>{t('match.lineups')}</h2>
+      {error && <p className="error-text">{t(`errors.${error}`, { defaultValue: t('errors.unknown') })}</p>}
+      {detail && !detail.lineups_public && <p className="notice">{t('public.lineups_senior_only')}</p>}
+      {detail?.lineups_public &&
+        teams.map((teamId) => (
+          <section key={teamId}>
+            <h3 style={{ marginBlock: '14px 8px' }}>{p.teams.get(teamId)?.name}</h3>
+            {detail.published_team_ids.includes(teamId) ? (
+              <PublicLineupList rows={detail.lineups.filter((l) => l.team_id === teamId)} />
+            ) : (
+              <div className="list">
+                <div className="empty">{t('public.lineup_not_submitted')}</div>
+              </div>
+            )}
+          </section>
+        ))}
+    </>
+  );
+}
+
+function PublicLineupList({ rows }: { rows: PublicLineup[] }) {
+  const { t } = useTranslation();
+  const row = (l: PublicLineup, i: number) => (
+    <div key={i}>
+      <span className="minute">{l.shirt_number ?? ''}</span>
+      <span className="grow">{l.name ?? <span className="muted">{t('public.minor_player')}</span>}</span>
+      {l.is_captain && <span className="chip">{t('match.captain')}</span>}
+      {l.is_goalkeeper && <span className="chip">{t('match.goalkeeper')}</span>}
+    </div>
+  );
+  const starters = rows.filter((l) => l.is_starter);
+  const bench = rows.filter((l) => !l.is_starter);
+  return (
+    <>
+      <div className="list">{starters.length ? starters.map(row) : <Empty />}</div>
+      {bench.length > 0 && (
+        <>
+          <p className="muted small" style={{ marginBlock: '4px 6px' }}>
+            {t('match.bench')}
+          </p>
+          <div className="list">{bench.map(row)}</div>
+        </>
+      )}
     </>
   );
 }

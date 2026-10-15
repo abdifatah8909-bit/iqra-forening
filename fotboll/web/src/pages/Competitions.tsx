@@ -120,6 +120,7 @@ function CompetitionForm({ seasons, onDone }: { seasons: { id: string; name: str
           yellow_card_limit: Number(f.get('yellow_card_limit')),
           red_card_ban: Number(f.get('red_card_ban')),
           second_yellow_ban: Number(f.get('second_yellow_ban')),
+          is_senior: f.get('is_senior') === 'on',
         });
         onDone();
       }}
@@ -156,9 +157,25 @@ function CompetitionForm({ seasons, onDone }: { seasons: { id: string; name: str
           <input name="points_draw" type="number" min={0} max={10} defaultValue={1} />
         </Field>
       </div>
+      <SeniorField />
       <CardRuleFields />
       <FormButtons onCancel={onDone} />
     </form>
+  );
+}
+
+/** Senior competitions show submitted lineups on the public pages (adults' names only). */
+function SeniorField({ competition }: { competition?: Competition }) {
+  const { t } = useTranslation();
+  return (
+    <label className="check">
+      <input name="is_senior" type="checkbox" defaultChecked={competition?.is_senior ?? true} />
+      <span>
+        {t('competition.is_senior')}
+        <br />
+        <span className="muted small">{t('competition.is_senior_hint')}</span>
+      </span>
+    </label>
   );
 }
 
@@ -208,6 +225,7 @@ function RulesForm({ competition }: { competition: Competition }) {
           yellow_card_limit: Number(f.get('yellow_card_limit')),
           red_card_ban: Number(f.get('red_card_ban')),
           second_yellow_ban: Number(f.get('second_yellow_ban')),
+          is_senior: f.get('is_senior') === 'on',
         });
         toast.show(t('common.saved'));
         setOpen(false);
@@ -221,6 +239,7 @@ function RulesForm({ competition }: { competition: Competition }) {
           <input name="points_draw" type="number" min={0} max={10} defaultValue={competition.points_draw} />
         </Field>
       </div>
+      <SeniorField competition={competition} />
       <CardRuleFields competition={competition} />
       <FormButtons onCancel={() => setOpen(false)} />
       {toast.node}

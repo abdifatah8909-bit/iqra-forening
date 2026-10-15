@@ -201,7 +201,9 @@
     "add_match": "Add match",
     "home": "Home",
     "away": "Away",
-    "edit_rules": "Points and card rules"
+    "edit_rules": "Points and card rules",
+    "is_senior": "Senior competition",
+    "is_senior_hint": "Submitted lineups are shown on the public page. Players under 18 appear without their name."
   },
   "table": {
     "pos": "#",
@@ -350,7 +352,10 @@
     "leagues": "Leagues",
     "results": "Results",
     "share_title": "Public page",
-    "share_text": "Anyone can follow fixtures, results and tables here, without signing in. No player details are shown."
+    "share_text": "Anyone can follow fixtures, results and tables here, without signing in. No player details are shown.",
+    "lineups_senior_only": "Lineups are only shown for senior competitions.",
+    "lineup_not_submitted": "The team sheet has not been submitted yet.",
+    "minor_player": "Player under 18"
   },
   "discipline": {
     "title": "Cards and suspensions",

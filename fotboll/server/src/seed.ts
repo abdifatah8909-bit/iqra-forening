@@ -86,7 +86,8 @@ export async function seed(db: Db) {
         club_id: clubId,
         first_name: firstNames[(i + c * 3) % firstNames.length],
         last_name: lastNames[(i * 7 + c) % lastNames.length],
-        birth_date: `${1995 + ((i + c) % 10)}-0${1 + (i % 9)}-1${i % 9}`,
+        // One of Iqra IF's substitutes is 17, so the demo shows how minors appear publicly.
+        birth_date: c === 0 && i === 11 ? '2009-06-15' : `${1995 + ((i + c) % 10)}-0${1 + (i % 9)}-1${i % 9}`,
         gender: 'male',
         license_no: `IQ-${c + 1}${String(i + 1).padStart(3, '0')}`,
       });

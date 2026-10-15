@@ -201,7 +201,9 @@
     "add_match": "Ku dar ciyaar",
     "home": "Guriga",
     "away": "Safarka",
-    "edit_rules": "Dhibcaha iyo xeerarka kaararka"
+    "edit_rules": "Dhibcaha iyo xeerarka kaararka",
+    "is_senior": "Tartanka waaweynta",
+    "is_senior_hint": "Safafka la gudbiyay waxaa lagu muujiyaa bogga dadweynaha. Ciyaartoyda ka yar 18 sano magacooda lama muujiyo."
   },
   "table": {
     "pos": "#",
@@ -350,7 +352,10 @@
     "leagues": "Horyaallada",
     "results": "Natiijooyinka",
     "share_title": "Bogga dadweynaha",
-    "share_text": "Qof kasta halkan wuu kala socon karaa jadwalka, natiijooyinka iyo shaxda isagoon gelin. Xog ciyaartoy lama muujiyo."
+    "share_text": "Qof kasta halkan wuu kala socon karaa jadwalka, natiijooyinka iyo shaxda isagoon gelin. Xog ciyaartoy lama muujiyo.",
+    "lineups_senior_only": "Safafka waxaa keliya lagu muujiyaa tartamada waaweynta.",
+    "lineup_not_submitted": "Liiska kooxda weli lama gudbin.",
+    "minor_player": "Ciyaaryahan ka yar 18"
   },
   "discipline": {
     "title": "Kaararka iyo ganaaxyada",
