@@ -37,8 +37,8 @@ export async function seed(db: Db) {
   await withWriteLock(db, (tx) =>
     tx.query(`insert into federations (id, name, country, default_locale) values ($1, $2, $3, 'so')`, [
       federationId,
-      'Iqra Fotbollsförbund',
-      'SE',
+      'Ururka Kubadda Cagta Soomaaliyeed',
+      'SO',
     ]),
   );
   const adminId = await createUser(db, federationId, 'admin@example.org', 'Amina Hassan', 'so', [

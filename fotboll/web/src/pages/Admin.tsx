@@ -67,6 +67,8 @@ export function AdminPage() {
           ))}
         </div>
 
+        <FederationSettings />
+
         <ActiveBans />
 
         <h2>{t('admin.venues')}</h2>
@@ -84,6 +86,37 @@ export function AdminPage() {
 
         <Users />
       </main>
+    </>
+  );
+}
+
+/** The federation's name, shown on the public pages and in emails. */
+function FederationSettings() {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const federation = useLiveQuery(async () => (await db.data('federations').toArray())[0], []);
+  if (!federation) return null;
+  return (
+    <>
+      <h2>{t('admin.federation')}</h2>
+      <form
+        className="card"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const name = String(new FormData(e.currentTarget).get('name')).trim();
+          if (name && name !== federation.name) {
+            await save('federations', { id: federation.id, name });
+            toast.show(t('common.saved'));
+          }
+        }}
+      >
+        <Field label={t('admin.federation_name')}>
+          <input name="name" required maxLength={200} defaultValue={federation.name} key={federation.name} />
+        </Field>
+        <p className="muted small">{t('admin.federation_name_hint')}</p>
+        <button className="secondary">{t('common.save')}</button>
+        {toast.node}
+      </form>
     </>
   );
 }

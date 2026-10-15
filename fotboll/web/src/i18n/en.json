@@ -311,7 +311,10 @@
     "copy": "Copy link",
     "copied": "Copied",
     "link_valid_invite": "The link works once and is valid for 14 days.",
-    "link_valid_reset": "The link works once and is valid for 24 hours."
+    "link_valid_reset": "The link works once and is valid for 24 hours.",
+    "federation": "Federation",
+    "federation_name": "Federation's name",
+    "federation_name_hint": "Shown on the public page and in invitation emails."
   },
   "settings": {
     "title": "Settings",

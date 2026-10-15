@@ -311,7 +311,10 @@
     "copy": "Koobi xiriirka",
     "copied": "Waa la koobiyeeyay",
     "link_valid_invite": "Xiriirku hal mar ayuu shaqeeyaa, wuxuuna ansax yahay 14 maalmood.",
-    "link_valid_reset": "Xiriirku hal mar ayuu shaqeeyaa, wuxuuna ansax yahay 24 saacadood."
+    "link_valid_reset": "Xiriirku hal mar ayuu shaqeeyaa, wuxuuna ansax yahay 24 saacadood.",
+    "federation": "Ururka",
+    "federation_name": "Magaca ururka",
+    "federation_name_hint": "Waxaa lagu muujiyaa bogga dadweynaha iyo iimaylada martiqaadka."
   },
   "settings": {
     "title": "Dejinta",
