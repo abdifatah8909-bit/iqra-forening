@@ -10,12 +10,20 @@ const css = html.match(/<link rel="stylesheet" crossorigin href="\.\/(assets\/[^
 const script = readFileSync(path.join(dist, js), 'utf8').replaceAll('</script', '<\\/script');
 const style = readFileSync(path.join(dist, css), 'utf8');
 
-const page = `<meta charset="utf-8">
-<title>Nidaamka UKCS</title>
+const page = `<!doctype html>
+<html lang="so">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1e5aa8">
+<title>Nidaamka UKCS</title>
 <style>${style}</style>
+</head>
+<body>
 <div id="root"></div>
 <script type="module">${script}</script>
+</body>
+</html>
 `;
 const out = path.join(dist, 'iqra-fotboll-demo.html');
 writeFileSync(out, page);
