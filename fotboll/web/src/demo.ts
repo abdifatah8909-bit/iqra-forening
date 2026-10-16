@@ -183,7 +183,13 @@ export async function demoPublicData(): Promise<PublicData> {
   const live = (t: string) => src[t] ?? [];
   const f = live('federations')[0];
   return {
-    federation: { id: f.id, name: f.name, country: f.country ?? null, default_locale: f.default_locale } as PublicData['federation'],
+    federation: {
+      id: f.id,
+      name: f.name,
+      name_i18n: f.name_i18n ?? null,
+      country: f.country ?? null,
+      default_locale: f.default_locale,
+    } as PublicData['federation'],
     seasons: live('seasons') as unknown as PublicData['seasons'],
     competitions: live('competitions') as unknown as PublicData['competitions'],
     clubs: live('clubs').filter((c) => c.status === 'active') as unknown as PublicData['clubs'],

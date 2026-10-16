@@ -44,6 +44,8 @@ export const schemas = {
   federations: z.object({
     id: uuid,
     name: text(),
+    /** The name in each language; `name` is the fallback. */
+    name_i18n: z.record(z.enum(LOCALES), z.string().max(200)).nullable().optional(),
     country: optText(80),
     default_locale: z.enum(LOCALES),
   }),
@@ -294,3 +296,8 @@ export interface RowTypes {
 
 /** A report in one of these states is locked for everyone but the federation admin. */
 export const LOCKED_REPORT_STATUSES: ReportStatus[] = ['submitted', 'approved'];
+
+/** A name in the reader's language, falling back to the main name. */
+export function localName(row: { name: string; name_i18n?: Partial<Record<Locale, string>> | null }, locale: string): string {
+  return row.name_i18n?.[locale as Locale]?.trim() || row.name;
+}

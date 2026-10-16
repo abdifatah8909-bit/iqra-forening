@@ -14,6 +14,8 @@ const linkToken = (text: string) => text.match(/\/set-password\/([\w-]+)/)![1];
 
 describe('invitations and password reset', () => {
   it('invites a user who then chooses a password and is signed in', async () => {
+    // The email names the federation in the user's language.
+    await env.db.query(`update federations set name_i18n = '{"en": "Test Football Federation"}'`);
     const created = await env.app.inject({
       method: 'POST',
       url: '/api/admin/users',
@@ -28,6 +30,7 @@ describe('invitations and password reset', () => {
     expect(env.mailer.sent).toHaveLength(1);
     expect(env.mailer.sent[0].to).toBe('invited@test.org');
     expect(env.mailer.sent[0].text).toContain(`https://fotboll.test/set-password/${link.token}`);
+    expect(env.mailer.sent[0].text).toContain('invited to Nidaamka UKCS by Test Football Federation');
 
     // No password works before the invitation is used.
     const early = await env.app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: 'invited@test.org', password: '!' } });
@@ -203,7 +206,7 @@ describe('public pages', () => {
   it('publishes fixtures, counted results and clubs, but no personal data', async () => {
     const l = await league(env);
     const feds = (await env.app.inject({ method: 'GET', url: '/api/public/federations' })).json();
-    expect(feds).toEqual([{ id: env.federationId, name: 'Test FF', country: null }]);
+    expect(feds).toEqual([{ id: env.federationId, name: 'Test FF', name_i18n: null, country: null }]);
 
     const before = (await env.app.inject({ method: 'GET', url: `/api/public/federations/${env.federationId}` })).json();
     expect(before.matches).toHaveLength(1);

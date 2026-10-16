@@ -68,7 +68,7 @@ export async function publicMatchDetail(db: Db, federationId: string, matchId: s
 export async function publicData(db: Db, federationId: string): Promise<PublicData | null> {
   const federation = (
     await db.query(
-      'select id, name, country, default_locale from federations where id = $1 and deleted_at is null',
+      'select id, name, name_i18n, country, default_locale from federations where id = $1 and deleted_at is null',
       [federationId],
     )
   ).rows[0];
@@ -96,7 +96,9 @@ export async function publicData(db: Db, federationId: string): Promise<PublicDa
 
 export function registerPublicRoutes(app: FastifyInstance, db: Db, mediaDir: string) {
   app.get('/api/public/federations', async (_req, reply) => {
-    const rows = await db.query('select id, name, country from federations where deleted_at is null order by name');
+    const rows = await db.query(
+      'select id, name, name_i18n, country from federations where deleted_at is null order by name',
+    );
     return reply.header('cache-control', 'public, max-age=300').send(rows.rows);
   });
 

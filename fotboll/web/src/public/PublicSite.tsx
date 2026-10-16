@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, NavLink, Route, Routes, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { computeStandings, LOCALES, type PublicData, type PublicLineup, type PublicMatchDetail } from '@fotboll/shared';
+import { computeStandings, localName, LOCALES, type PublicData, type PublicLineup, type PublicMatchDetail } from '@fotboll/shared';
 import { api, ApiError } from '../api';
 import { Empty, StandingsTable, Tabs } from '../components';
 import { DEMO, demoPublicData, demoPublicMatch } from '../demo';
@@ -21,14 +21,16 @@ export function PublicSite() {
   );
 }
 
+type FederationName = Pick<PublicData['federation'], 'id' | 'name' | 'name_i18n'>;
+
 function FederationPicker() {
-  const { t } = useTranslation();
-  const [feds, setFeds] = useState<{ id: string; name: string }[] | null>(null);
+  const { t, i18n } = useTranslation();
+  const [feds, setFeds] = useState<FederationName[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const load = DEMO
       ? demoPublicData().then((d) => [d.federation])
-      : api<{ id: string; name: string }[]>('/public/federations');
+      : api<FederationName[]>('/public/federations');
     load.then(setFeds).catch((e) => setError(e instanceof ApiError ? e.code : 'unknown'));
   }, []);
   if (feds?.length === 1) return <Navigate to={`/public/${feds[0].id}`} replace />;
@@ -42,7 +44,7 @@ function FederationPicker() {
             {feds.length === 0 && <Empty />}
             {feds.map((f) => (
               <Link key={f.id} to={`/public/${f.id}`}>
-                <span className="grow">{f.name}</span>
+                <span className="grow">{localName(f, i18n.language)}</span>
                 <span aria-hidden>›</span>
               </Link>
             ))}
@@ -77,12 +79,12 @@ function usePublicData(fed: string) {
 
 function FederationSite() {
   const { fed } = useParams() as { fed: string };
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data, error, loadedAt, reload } = usePublicData(fed);
 
   return (
     <div className="public">
-      <PublicHeader title={data?.federation.name ?? t('app.name')} />
+      <PublicHeader title={data ? localName(data.federation, i18n.language) : t('app.name')} />
       <nav className="public-nav">
         <NavLink to={`/public/${fed}`} end>
           {t('public.overview')}

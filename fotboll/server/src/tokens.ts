@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { localName } from '@fotboll/shared';
 import type { Db, Tx } from './db.js';
 import { tokenEmail, type Mailer } from './mail.js';
 
@@ -73,7 +74,7 @@ export async function emailToken(
   if (!mailer.enabled || !publicUrl) return false;
   const user = (
     await db.query(
-      `select u.email, u.display_name, u.locale, f.name as federation
+      `select u.email, u.display_name, u.locale, f.name, f.name_i18n
        from users u join federations f on f.id = u.federation_id where u.id = $1`,
       [userId],
     )
@@ -81,7 +82,7 @@ export async function emailToken(
   if (!user) return false;
   const msg = tokenEmail(purpose, user.locale, {
     name: user.display_name,
-    federation: user.federation,
+    federation: localName(user, user.locale),
     link: setPasswordLink(publicUrl, token),
     days: INVITE_DAYS,
     hours: RESET_HOURS,

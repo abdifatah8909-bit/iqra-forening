@@ -103,16 +103,26 @@ function FederationSettings() {
         className="card"
         onSubmit={async (e) => {
           e.preventDefault();
-          const name = String(new FormData(e.currentTarget).get('name')).trim();
-          if (name && name !== federation.name) {
-            await save('federations', { id: federation.id, name });
-            toast.show(t('common.saved'));
-          }
+          const f = new FormData(e.currentTarget);
+          const names = Object.fromEntries(LOCALES.map((l) => [l, String(f.get(`name_${l}`) ?? '').trim()]));
+          // The Somali name is the main name; the others fall back to it when empty.
+          const name = names.so || federation.name;
+          await save('federations', { id: federation.id, name, name_i18n: { ...names, so: name } });
+          toast.show(t('common.saved'));
         }}
       >
-        <Field label={t('admin.federation_name')}>
-          <input name="name" required maxLength={200} defaultValue={federation.name} key={federation.name} />
-        </Field>
+        {LOCALES.map((l) => (
+          <Field key={l} label={`${t('admin.federation_name')} · ${LANGUAGE_NAMES[l]}`}>
+            <input
+              name={`name_${l}`}
+              required={l === 'so'}
+              maxLength={200}
+              dir={l === 'ar' ? 'rtl' : 'ltr'}
+              defaultValue={federation.name_i18n?.[l] ?? (l === 'so' ? federation.name : '')}
+              key={`${l}:${federation.updated_at}`}
+            />
+          </Field>
+        ))}
         <p className="muted small">{t('admin.federation_name_hint')}</p>
         <button className="secondary">{t('common.save')}</button>
         {toast.node}

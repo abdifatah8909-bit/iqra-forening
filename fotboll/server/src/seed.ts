@@ -35,9 +35,14 @@ export async function seed(db: Db) {
 
   const federationId = uuidv7();
   await withWriteLock(db, (tx) =>
-    tx.query(`insert into federations (id, name, country, default_locale) values ($1, $2, $3, 'so')`, [
+    tx.query(`insert into federations (id, name, name_i18n, country, default_locale) values ($1, $2, $3, $4, 'so')`, [
       federationId,
       'Ururka Kubadda Cagta Soomaaliyeed',
+      JSON.stringify({
+        so: 'Ururka Kubadda Cagta Soomaaliyeed',
+        en: 'Somali Football Federation',
+        ar: 'الاتحاد الصومالي لكرة القدم',
+      }),
       'SO',
     ]),
   );

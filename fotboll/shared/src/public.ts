@@ -6,7 +6,13 @@ import type { Competition, Match } from './tables.js';
  * no players, referees or users.
  */
 export interface PublicData {
-  federation: { id: string; name: string; country: string | null; default_locale: string };
+  federation: {
+    id: string;
+    name: string;
+    name_i18n: Partial<Record<'so' | 'en' | 'ar', string>> | null;
+    country: string | null;
+    default_locale: string;
+  };
   seasons: { id: string; name: string; starts_on: string; ends_on: string }[];
   competitions: Pick<
     Competition,

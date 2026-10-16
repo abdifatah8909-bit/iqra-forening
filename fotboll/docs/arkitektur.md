@@ -27,7 +27,7 @@ Se `server/migrations/001_init.sql` (Postgres) och `shared/src/tables.ts` (zod-s
 
 | Område | Tabeller |
 |---|---|
-| Organisation och åtkomst | `federations`, `users`, `role_assignments`, `sessions` |
+| Organisation och åtkomst | `federations` (namn per språk i `name_i18n`), `users`, `role_assignments`, `sessions` |
 | Register | `clubs`, `players`, `registrations`, `media` |
 | Tävling | `seasons`, `competitions`, `teams`, `squad_members`, `venues`, `matches` |
 | Matchrapport | `match_reports` (id = match-id), `team_sheets`, `match_lineups`, `match_events` |
