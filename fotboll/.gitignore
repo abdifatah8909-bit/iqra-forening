@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+uploads
+test-results
+playwright-report
+dist-demo

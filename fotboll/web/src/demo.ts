@@ -1,0 +1,309 @@
+import {
+  isMinor,
+  initialTransferStatus,
+  LOCALES,
+  LOCKED_REPORT_STATUSES,
+  transferActions,
+  uuidv7,
+  scoreFromEvents,
+  type MutationResult,
+  type PublicData,
+  type PublicMatchDetail,
+  type RowTypes,
+  type SyncTable,
+  type PullResponse,
+  type ReportStatus,
+  type Locale,
+  type Role,
+  type TransferStatus,
+} from '@fotboll/shared';
+import type { PlayerSearchHit } from './pages/Transfers';
+import { db } from './db';
+import { startSession, type Me } from './session';
+import type { Transport } from './sync';
+
+/**
+ * Demo mode (VITE_DEMO=1): the whole app runs in the browser without a
+ * server. A snapshot of the seed data stands in for the first pull, and
+ * pushes are accepted locally with the server's side effects imitated.
+ * Server-side permission checks and per-role data scoping do not run here;
+ * the UI's own permission rules still apply.
+ */
+export const DEMO = import.meta.env.VITE_DEMO === '1';
+
+interface Snapshot {
+  accounts: Record<DemoKey, Me>;
+  pull: PullResponse;
+}
+export type DemoKey = 'admin' | 'club' | 'referee';
+export const DEMO_ACCOUNTS: { key: DemoKey; role: Role }[] = [
+  { key: 'admin', role: 'federation_admin' },
+  { key: 'club', role: 'club_admin' },
+  { key: 'referee', role: 'referee' },
+];
+
+let snapshot: Snapshot | null = null;
+async function loadSnapshot() {
+  snapshot ??= (await import('../demo/snapshots.json')).default as unknown as Snapshot;
+  return snapshot;
+}
+
+/** All roles share one local copy, so switching role keeps what was done in another. */
+export async function demoLogin(key: DemoKey) {
+  const s = await loadSnapshot();
+  // Roles have different saved languages; in the demo the one on screen applies to all of them.
+  const onScreen = document.documentElement.lang;
+  const locale = (LOCALES as readonly string[]).includes(onScreen) ? (onScreen as Locale) : s.accounts[key].locale;
+  await startSession(`demo-${key}`, { ...s.accounts[key], locale }, { keepData: true });
+}
+
+const WEEK = 7 * 86400000;
+
+/** Move the fixtures so the last played round was within the past week, whenever the demo is opened. */
+function shiftDates(pull: PullResponse): PullResponse {
+  const reports = new Map((pull.changes.match_reports ?? []).map((r) => [r.id, r]));
+  const matches = pull.changes.matches ?? [];
+  const played = matches.filter((m) => reports.has(m.id as string)).map((m) => Date.parse(m.kickoff_at as string));
+  if (!played.length) return pull;
+  const offset = Math.floor((Date.now() - Math.max(...played)) / WEEK) * WEEK;
+  return {
+    ...pull,
+    changes: {
+      ...pull.changes,
+      matches: matches.map((m) => ({ ...m, kickoff_at: new Date(Date.parse(m.kickoff_at as string) + offset).toISOString() })),
+    },
+  };
+}
+
+let seq = Date.now();
+
+/**
+ * Identifies the example data built into this demo. A browser that kept data
+ * from an older demo (another seed) starts over from the new data instead.
+ */
+function demoVersion(s: Snapshot) {
+  return `demo:${(s.pull.changes.federations?.[0]?.id as string | undefined) ?? ''}:${s.pull.cursor}`;
+}
+
+/** Drops what was done in an older demo and signs the same role in again with the new data. */
+async function startOver(s: Snapshot) {
+  await db.outbox.clear();
+  await db.sync_errors.clear();
+  const token = await db.getMeta<string>('token');
+  const key = token?.slice('demo-'.length) as DemoKey | undefined;
+  const me = await db.getMeta<Me>('me');
+  if (token && key && s.accounts[key]) {
+    await startSession(token, { ...s.accounts[key], locale: me?.locale ?? s.accounts[key].locale }, { keepData: true });
+  }
+}
+
+export const demoTransport: Transport = {
+  async pull(since, scope) {
+    const s = await loadSnapshot();
+    const version = demoVersion(s);
+    if (scope === version) return { cursor: since, scope: version, reset: false, has_more: false, changes: {} };
+    if (scope) await startOver(s);
+    const pull = shiftDates(s.pull);
+    return { ...pull, scope: version, reset: true, has_more: false };
+  },
+
+  async push(mutations) {
+    const me = await db.getMeta<Me>('me');
+    const now = new Date().toISOString();
+    const results: MutationResult[] = [];
+    for (const m of mutations) {
+      const local = (await db.data(m.table).get(m.row_id)) as Record<string, unknown> | undefined;
+      if (m.op === 'delete') {
+        results.push({ id: m.id, status: 'ok', row: { ...(local ?? { id: m.row_id }), deleted_at: now } });
+        continue;
+      }
+      const row: Record<string, unknown> = { ...local, ...m.data, id: m.row_id, server_seq: ++seq, updated_at: now, updated_by: me?.id };
+
+      if (m.table === 'match_reports' && (row.status === 'submitted' || row.status === 'approved')) {
+        const match = await db.data('matches').get(m.row_id);
+        const events = await db.data('match_events').where('match_id').equals(m.row_id).toArray();
+        if (match) {
+          const score = scoreFromEvents(events, match.home_team_id, match.away_team_id);
+          row.home_score = score.home;
+          row.away_score = score.away;
+          await db.data('matches').update(match.id, { status: 'played' });
+        }
+        if (row.status === 'submitted' && !row.submitted_at) Object.assign(row, { submitted_at: now, submitted_by: me?.id });
+        if (row.status === 'approved') Object.assign(row, { approved_at: now, approved_by: me?.id });
+      }
+      if (m.table === 'registrations' && m.data.status && m.data.status !== 'pending') {
+        Object.assign(row, { decided_by: me?.id, decided_at: now });
+        if (m.data.status === 'approved') await db.data('players').update(row.player_id as string, { club_id: row.club_id as string });
+      }
+      if (m.table === 'transfers') {
+        const rejection = await demoTransfer(m.data, row, local, me, now);
+        if (rejection) {
+          results.push({ id: m.id, status: 'rejected', reason: rejection, row: local?.server_seq ? local : null });
+          continue;
+        }
+      }
+      if (m.table === 'match_lineups' && 'player_id' in m.data) {
+        const p = await db.data('players').get(row.player_id as string);
+        row.player_name = p ? `${p.first_name} ${p.last_name}` : null;
+      }
+      if (m.table === 'team_sheets' && m.data.status === 'submitted' && !local?.submitted_at) {
+        Object.assign(row, { submitted_at: now, submitted_by: me?.id });
+      }
+      if (m.table === 'team_sheets' && m.data.status === 'draft') Object.assign(row, { submitted_at: null, submitted_by: null });
+      if (m.table === 'media') row.upload_status = 'done';
+      results.push({ id: m.id, status: 'ok', row });
+    }
+    return results;
+  },
+};
+
+/**
+ * The public pages in the demo: built from this browser's copy of the data
+ * (so a report submitted in the demo shows up), or from the snapshot before
+ * anyone has signed in.
+ */
+/**
+ * Rows for the public pages: this browser's copy, unless it is from an older
+ * demo or nobody has signed in yet, in which case the built-in example data.
+ */
+async function publicSource(): Promise<<K extends SyncTable>(table: K) => Promise<RowTypes[K][]>> {
+  const s = await loadSnapshot();
+  const local = (await db.getMeta<string>('scope')) === demoVersion(s) && (await db.data('federations').count()) > 0;
+  const snapshot = shiftDates(s.pull).changes;
+  return async (table) =>
+    ((local ? await db.data(table).toArray() : (snapshot[table] ?? [])) as RowTypes[typeof table][]).filter((r) => !r.deleted_at);
+}
+
+export async function demoPublicData(): Promise<PublicData> {
+  const rows = await publicSource();
+  const src: Record<string, Record<string, unknown>[]> = {};
+  for (const t of ['federations', 'seasons', 'competitions', 'clubs', 'teams', 'venues', 'matches', 'match_reports'] as const) {
+    src[t] = (await rows(t)) as unknown as Record<string, unknown>[];
+  }
+  const live = (t: string) => src[t] ?? [];
+  const f = live('federations')[0];
+  return {
+    federation: {
+      id: f.id,
+      name: f.name,
+      name_i18n: f.name_i18n ?? null,
+      country: f.country ?? null,
+      default_locale: f.default_locale,
+    } as PublicData['federation'],
+    seasons: live('seasons') as unknown as PublicData['seasons'],
+    competitions: live('competitions') as unknown as PublicData['competitions'],
+    clubs: live('clubs').filter((c) => c.status === 'active') as unknown as PublicData['clubs'],
+    teams: live('teams') as unknown as PublicData['teams'],
+    venues: live('venues') as unknown as PublicData['venues'],
+    matches: live('matches') as unknown as PublicData['matches'],
+    results: live('match_reports')
+      .filter((r) => LOCKED_REPORT_STATUSES.includes(r.status as ReportStatus))
+      .map((r) => ({ id: r.id as string, home_score: r.home_score as number, away_score: r.away_score as number })),
+  };
+}
+
+/** The server's transfer rules and side effects, imitated for the demo. */
+async function demoTransfer(
+  patch: Record<string, unknown>,
+  row: Record<string, unknown>,
+  local: Record<string, unknown> | undefined,
+  me: Me | undefined,
+  now: string,
+): Promise<string | null> {
+  const actor = {
+    isFedAdmin: !!me?.roles.some((r) => r.role === 'federation_admin'),
+    clubIds: me?.roles.filter((r) => r.role === 'club_admin').map((r) => r.club_id!) ?? [],
+  };
+  const player = await db.data('players').get(row.player_id as string);
+  if ('player_id' in patch) {
+    // New request: the starting point follows the player's current club.
+    const from = player?.club_id ?? null;
+    if (from === row.to_club_id) return 'already_in_club';
+    Object.assign(row, { from_club_id: from, status: initialTransferStatus(from), requested_by: me?.id });
+    return null;
+  }
+  const target = patch.status as TransferStatus | undefined;
+  if (!target || !local) return null;
+  // The local row already shows the new status (optimistic), so work out the step it came from.
+  const previous: TransferStatus =
+    target === 'approved' || local.released_at || !local.from_club_id ? 'pending_federation' : 'pending_club';
+  if (row.decided_at || (target === 'pending_federation' && row.released_at)) return null; // already applied
+  const state = { status: previous, from_club_id: (local.from_club_id as string) ?? null, to_club_id: row.to_club_id as string };
+  if (!transferActions(state, actor).includes(target)) return 'forbidden';
+  if (target === 'pending_federation') Object.assign(row, { released_by: me?.id, released_at: now });
+  if (target === 'approved' || target === 'rejected') Object.assign(row, { decided_by: me?.id, decided_at: now });
+  if (target === 'approved' && player) {
+    const to = row.to_club_id as string;
+    await db.data('players').update(player.id, { club_id: to });
+    const teams = new Map((await db.data('teams').toArray()).map((x) => [x.id, x.club_id]));
+    for (const sm of await db.data('squad_members').where('player_id').equals(player.id).toArray()) {
+      if (teams.get(sm.team_id) !== to) await db.data('squad_members').delete(sm.id);
+    }
+    const today = now.slice(0, 10);
+    const seasons = await db.data('seasons').orderBy('starts_on').reverse().toArray();
+    const season = seasons.find((x) => x.starts_on <= today && today <= x.ends_on) ?? seasons[0];
+    if (season) {
+      await db.data('registrations').put({
+        id: uuidv7(), player_id: player.id, club_id: to, season_id: season.id, status: 'approved', note: 'transfer',
+        decided_by: me?.id ?? null, decided_at: now, federation_id: player.federation_id, created_at: now,
+        updated_at: now, updated_by: me?.id ?? null, deleted_at: null, server_seq: ++seq,
+      });
+    }
+  }
+  return null;
+}
+
+/** Player search for transfer requests, against this browser's copy of the data. */
+export async function demoSearchPlayers(q: Record<string, string>): Promise<PlayerSearchHit[]> {
+  const lower = (v: unknown) => String(v ?? '').trim().toLowerCase();
+  const clubs = new Map((await db.data('clubs').toArray()).map((c) => [c.id, c.name]));
+  const open = new Set(
+    (await db.data('transfers').toArray()).filter((x) => x.status === 'pending_club' || x.status === 'pending_federation').map((x) => x.player_id),
+  );
+  const players = (await db.data('players').toArray()).filter((p) =>
+    q.license_no
+      ? lower(p.license_no) === lower(q.license_no)
+      : lower(p.first_name) === lower(q.first_name) && lower(p.last_name) === lower(q.last_name) && p.birth_date === q.birth_date,
+  );
+  return players.slice(0, 10).map((p) => ({
+    id: p.id,
+    first_name: p.first_name,
+    last_name: p.last_name,
+    birth_year: Number(p.birth_date.slice(0, 4)),
+    club_id: p.club_id ?? null,
+    club_name: p.club_id ? (clubs.get(p.club_id) ?? null) : null,
+    open_transfer: open.has(p.id),
+  }));
+}
+
+/** The public match page in the demo, with the same rules as the server (see server/src/public.ts). */
+export async function demoPublicMatch(matchId: string): Promise<PublicMatchDetail> {
+  const none = { lineups_public: false, published_team_ids: [], lineups: [] };
+  const rows = await publicSource();
+  const match = (await rows('matches')).find((m) => m.id === matchId);
+  const competition = match && (await rows('competitions')).find((c) => c.id === match.competition_id);
+  if (!match || !competition) return none;
+  if (competition.is_senior === false) return none;
+  const report = (await rows('match_reports')).find((r) => r.id === matchId);
+  const sheets = (await rows('team_sheets')).filter((x) => x.match_id === matchId);
+  const published = report && LOCKED_REPORT_STATUSES.includes(report.status)
+    ? [match.home_team_id, match.away_team_id]
+    : sheets.filter((x) => x.status === 'submitted' && !x.deleted_at).map((x) => x.team_id);
+  const players = new Map((await rows('players')).map((p) => [p.id, p]));
+  const day = new Date(match.kickoff_at);
+  const lineups = (await rows('match_lineups'))
+    .filter((l) => l.match_id === matchId && published.includes(l.team_id))
+    .sort((a, b) => Number(b.is_starter) - Number(a.is_starter) || (a.shirt_number ?? 99) - (b.shirt_number ?? 99))
+    .map((l) => {
+      const p = players.get(l.player_id);
+      return {
+        team_id: l.team_id,
+        shirt_number: l.shirt_number ?? null,
+        name: p && isMinor(p.birth_date, day) ? null : (l.player_name ?? (p ? `${p.first_name} ${p.last_name}` : null)),
+        is_starter: l.is_starter,
+        is_captain: l.is_captain,
+        is_goalkeeper: l.is_goalkeeper,
+      };
+    });
+  return { lineups_public: true, published_team_ids: published, lineups };
+}

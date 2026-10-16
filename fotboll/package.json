@@ -1,0 +1,19 @@
+{
+  "name": "fotboll",
+  "private": true,
+  "workspaces": ["shared", "server", "web"],
+  "scripts": {
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "migrate": "npm run migrate -w server",
+    "seed": "npm run seed -w server",
+    "start": "npm run start -w server",
+    "typecheck": "tsc -p shared && tsc -p server && tsc -p web",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
